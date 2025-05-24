@@ -1,11 +1,12 @@
-# Progetto Sistemi Distribuiti 2024-2025 - NOME GRUPPO
+# Progetto Sistemi Distribuiti 2024-2025 - Finite State Automaton
 
 Lo scheletro espone la struttura che il progetto deve seguire. Al posto di questo paragrafo è necessario scrivere il nome del progetto e una breve descrizione.
 
 ## Componenti del gruppo
 
-* Nome Cognome (Matricola) <email@campus.unimib.it>
-* ...
+* Federico Zotti (914252) <f.zotti@campus.unimib.it>
+* Andrea Ranica (909424) <a.ranica@campus.unimib.it>
+* Sara Trabattoni (914295) <s.trabattoni@campus.unimib.it>
 
 ## Compilazione ed esecuzione
 
