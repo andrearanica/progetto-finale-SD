@@ -1,12 +1,72 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Example page</title>
+    <title>Carta Cultura Giovani</title>
   </head>
   <body data-server-no-reload>
-    <h2>Hello World!</h2>
+    <link rel="stylesheet" href="autentica-registra-utente/autenticaUtente.css">
+    <section class="forms-section">
+      <h1 class="section-title" style="font-family:'Franklin Gothic Medium', 
+      'Arial Narrow', Arial, sans-serif; font-size:xx-large;">Carta Cultura Giovani</h1>
+      <div class="forms">
+        <div class="form-wrapper is-active">
+          <button type="button" class="switcher switcher-login">
+            Autenticazione 
+            <span class="underline"></span>
+          </button>
+          <form class="form form-login">
+            <fieldset>
+              <legend>Per favore, inserisci un codice fiscale valido per autenticarti.</legend>
+              <div class="input-block">
+                <label for="autenticazione-cf">Codice fiscale</label>
+                <input id="autenticazione-cf" type="cf" required>
+              </div>
+            </fieldset>
+            <button type="submit" class="btn-login">Autenticati</button>
+          </form>
+        </div>
+        <div class="form-wrapper">
+          <button type="button" class="switcher switcher-signup">
+            Registrati
+            <span class="underline"></span>
+          </button>
+          <form class="form form-signup">
+            <fieldset>
+              <legend>Per favore, inserisci nome, cognome, email codice fiscale validi per registrarti.</legend>
+              <div class="input-block">
+                <label for="signup-nome">Nome</label>
+                <input id="signup-nome" type="nome" required>
+              </div>
+              <div class="input-block">
+                <label for="signup-cognome">Cognome</label>
+                <input id="signup-cognome" type="cognome" required>
+              </div>
+              <div class="input-block">
+                <label for="signup-email">E-mail</label>
+                <input id="signup-email" type="email" required>
+              </div>
+              <div class="input-block">
+                <label for="signup-cf">Codice fiscale</label>
+                <input id="signup-cf" type="cf" required>
+              </div>
+            </fieldset>
+            <button type="submit" class="btn-signup">Continua</button>
+          </form>
+        </div>
+      </div>
+    </section>
     <script>
       const API_URI = "http://localhost:8080";
+      
+      // Gestisco le animazioni della pagina
+      const switchers = [...document.querySelectorAll('.switcher')]
+
+      switchers.forEach(item => {
+	      item.addEventListener('click', function() {
+		      switchers.forEach(item => item.parentElement.classList.remove('is-active'))
+		      this.parentElement.classList.add('is-active')
+	      })
+      })
 
       window.onload = init();
 
@@ -18,3 +78,4 @@
   </body>
 
 </html>
+
