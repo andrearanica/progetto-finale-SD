@@ -2,6 +2,8 @@ package it.unimib.sd2025;
 
 import java.net.*;
 import java.io.*;
+import it.unimib.sd2025.Database;
+import it.unimib.sd2025.SocketHandler;
 
 /**
  * Classe principale in cui parte il database.
@@ -22,7 +24,7 @@ public class Main {
 
         try {
             while (true)
-                new Handler(server.accept()).start();
+                new SocketHandler(server.accept()).start();
         } catch (IOException e) {
             System.err.println(e);
         } finally {
@@ -33,36 +35,36 @@ public class Main {
     /**
      * Handler di una connessione del client.
      */
-    private static class Handler extends Thread {
-        private Socket client;
+    // private static class Handler extends Thread {
+    //     private Socket client;
 
-        public Handler(Socket client) {
-            this.client = client;
-        }
+    //     public Handler(Socket client) {
+    //         this.client = client;
+    //     }
 
-        public void run() {
-            try {
-                var out = new PrintWriter(client.getOutputStream(), true);
-                var in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+    //     public void run() {
+    //         try {
+    //             var out = new PrintWriter(client.getOutputStream(), true);
+    //             var in = new BufferedReader(new InputStreamReader(client.getInputStream()));
 
-                String inputLine;
+    //             String inputLine;
 
-                while ((inputLine = in.readLine()) != null) {
-                    if (".".equals(inputLine)) {
-                        out.println("bye");
-                        break;
-                    }
-                    out.println(inputLine);
-                }
+    //             while ((inputLine = in.readLine()) != null) {
+    //                 if (".".equals(inputLine)) {
+    //                     out.println("bye");
+    //                     break;
+    //                 }
+    //                 out.println(inputLine);
+    //             }
 
-                in.close();
-                out.close();
-                client.close();
-            } catch (IOException e) {
-                System.err.println(e);
-            }
-        }
-    }
+    //             in.close();
+    //             out.close();
+    //             client.close();
+    //         } catch (IOException e) {
+    //             System.err.println(e);
+    //         }
+    //     }
+    // }
 
     /**
      * Metodo principale di avvio del database.
