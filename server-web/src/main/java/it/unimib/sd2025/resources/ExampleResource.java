@@ -1,4 +1,4 @@
-package it.unimib.sd2025;
+package it.unimib.sd2025.resources;
 
 import java.net.URI;
 import java.net.URISyntaxException;

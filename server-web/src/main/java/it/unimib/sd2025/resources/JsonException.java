@@ -1,4 +1,4 @@
-package it.unimib.sd2025;
+package it.unimib.sd2025.resources;
 
 import jakarta.json.bind.JsonbException;
 import jakarta.ws.rs.core.Response;
