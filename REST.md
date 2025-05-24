@@ -1,7 +1,5 @@
 # Progetto Sistemi Distribuiti 2024-2025 - API REST
 
-Documentare qui l'API REST progettata. Di seguito è presente un esempio.
-
 **Attenzione**: l'unica rappresentazione ammessa è in formato JSON. Pertanto vengono assunti gli header `Content-Type: application/json` e `Accept: application/json`.
 
 ## `/users`
@@ -45,29 +43,11 @@ Documentare qui l'API REST progettata. Di seguito è presente un esempio.
 
 **Header**: nessuno.
 
-**Risposta**: un oggetto User, che ha come campi `name`, `surname`, `email` e `fiscalCode`.
+**Risposta**: un oggetto User, che ha come campi `name`, `surname`, `email`, `fiscalCode` e `balance`.
 
 **Codici di stato restituiti**: 
 * `200 OK`
 * `404 Not Found` se il codice fiscale non è registrato nel sistema.
-
-### PUT
-
-**Descrizione**: modifica i dati di un utente del sistema.
-
-**Parametri**: `fiscalCode`, ossia il codice fiscale dell'utente.
-
-**Header**: nessuno.
-
-**Body richiesta**: singolo utente con i campi da modificare, tra `name`, `surname`, `email` e `fiscalCode`.
-
-**Risposta**: restituisce la nuova rappresentazione della risorsa, con le modifiche richieste.
-
-**Codici di stato restituiti**:
-
-* `201 Created`: successo.
-* `400 Bad Request`: c'è un errore del client (JSON, campo mancante o altro).
-* `404 Not found`: non esiste un utente con il codice fiscale specificato
 
 ## `/users/{fiscalCode}/vouchers/`
 
@@ -99,7 +79,7 @@ Documentare qui l'API REST progettata. Di seguito è presente un esempio.
 
 **Codici di stato restituiti**: 
 * `200 OK`.
-* `400 Bad request` se i dati forniti non sono validi.
+* `400 Bad request` se i dati forniti non sono validi (ad esempio se il saldo è insufficiente).
 * `404 Not Found` se il codice fiscale non è registrato nel sistema.
 
 ## `/users/{fiscalCode}/vouchers/{voucherId}`
