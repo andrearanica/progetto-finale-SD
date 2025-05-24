@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Home - Carta Cultura Giovani</title>
+  </head>
+  <body data-server-no-reload style="background-color: #1477bd;">
+    <link rel="stylesheet" href="home.css">
+    <div id="menuArea">
+      <input type="checkbox" id="menuToggle"></input>
+    
+    <label for="menuToggle" class="menuOpen">
+      <div class="open"></div>
+    </label>
+    
+    <div class="menu menuEffects">
+      <label for="menuToggle"></label>
+      <div class="menuContent">
+        <ul>
+          <li><a href="home.html">HOME</a></li>
+          <li><a href="../inserisci-buono/inserisciBuono.html">INSERISCI BUONO</a></li>
+          <li><a href="../elenco-buoni-generati/elencoBuoni.html">ELENCO BUONI GENERATI</a></li>
+          <li><a href="../index.html">ESCI</a></li>
+        </ul>
+      </div>
+    </div>
+    </div>
+
+    <div class="content" style="color: white; font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">
+      <h1 class="ribbon">CARTA CULTURA GIOVANI</h1>
+      <h1 style="font-family:'Franklin Gothic Medium', 
+      'Arial Narrow', Arial, sans-serif; font-size:xx-large; display: flex; 
+      justify-content: center; align-items: center; height: 10vh;">STATISTICHE GLOBALI</h1>
+      </br><p>Numero di utenti registrati: </p>
+      </br><p>Somma dei contributi di tutti gli utenti: </p>
+      </br><p>Somma dei buoni generati dagli utenti: </p>
+    </div>
+  
+    <script>
+      const API_URI = "http://localhost:8080";
+
+      window.onload = init();
+
+      async function init() {
+        // Iniziare qui.
+      }
+
+    </script>
+  </body>
+
+</html>
