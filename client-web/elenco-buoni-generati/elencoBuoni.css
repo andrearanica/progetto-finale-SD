@@ -266,11 +266,9 @@ a{
 }
 
 .order-table tr {
-    position: relative;
     overflow: hidden;
 }
 
 .order-table td {
-    position: relative;
     z-index: 1;
 }
