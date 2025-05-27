@@ -1,6 +1,8 @@
 package it.unimib.sd2025;
 
 import java.net.*;
+import java.util.List;
+import java.util.Vector;
 import java.io.*;
 import it.unimib.sd2025.Database;
 
@@ -49,9 +51,8 @@ public class SocketHandler extends Thread {
             out.println("ERR No input received");
             return;
         }
-
         inputLine = inputLine.trim();
-        // Prende il comando cercando la stringa " " (spazio) e lo divide in due parti:
+
 
         if (inputLine.toLowerCase().startsWith("set ")) {
             inputLine = inputLine.substring(4);
@@ -64,6 +65,7 @@ public class SocketHandler extends Thread {
             String value = parts[1].trim();
             String result = db.set(key, value);
             out.println(result);
+
         } else if (inputLine.toLowerCase().startsWith("get ")) {
             inputLine = inputLine.substring(4);
             String key = inputLine.trim();
@@ -74,6 +76,7 @@ public class SocketHandler extends Thread {
             }
             String result = db.get(key);
             out.println(result);
+
         } else if (inputLine.toLowerCase().startsWith("clear ")) {
             inputLine = inputLine.substring(4);
             String key = inputLine.trim();
@@ -84,6 +87,67 @@ public class SocketHandler extends Thread {
             }
             String result = db.clear(key);
             out.println(result);
+
+        } 
+        // Comandi per le liste
+        else if (inputLine.toLowerCase().startsWith("setl ")) {
+            inputLine = inputLine.substring(5);
+            String[] parts = inputLine.split(" ", 2);
+            if (parts.length < 2) {
+                out.println("ERR Invalid SETL command format");
+                return;
+            }
+            String key = parts[0].trim();
+            Vector<String> value = new Vector<>(List.of(parts[1].trim().split(" ")));
+            String result = db.setl(key, value);
+            out.println(result);
+
+        } else if (inputLine.toLowerCase().startsWith("getl ")) {
+            inputLine = inputLine.substring(5);
+            String key = inputLine.trim();
+            // Controlla che non ci siano spazi all'interno della chiave
+            if (key.contains(" ")) {
+                out.println("ERR Invalid key format");
+                return;
+            }
+            String result = db.getl(key);
+            out.println(result);
+
+        } else if (inputLine.toLowerCase().startsWith("clearl ")) {
+            inputLine = inputLine.substring(6);
+            String key = inputLine.trim();
+            // Controlla che non ci siano spazi all'interno della chiave
+            if (key.contains(" ")) {
+                out.println("ERR Invalid key format");
+                return;
+            }
+            String result = db.clearl(key);
+            out.println(result);
+
+        } else if (inputLine.toLowerCase().startsWith("addl ")) {
+            inputLine = inputLine.substring(5);
+            String[] parts = inputLine.split(" ", 2);
+            if (parts.length < 2) {
+                out.println("ERR Invalid ADDL command format");
+                return;
+            }
+            String key = parts[0].trim();
+            String value = parts[1].trim();
+            String result = db.addl(key, value);
+            out.println(result);
+
+        } else if (inputLine.toLowerCase().startsWith("removel ")) {
+            inputLine = inputLine.substring(8);
+            String[] parts = inputLine.split(" ", 2);
+            if (parts.length < 2) {
+                out.println("ERR Invalid REMOVEL command format");
+                return;
+            }
+            String key = parts[0].trim();
+            String value = parts[1].trim();
+            String result = db.removel(key, value);
+            out.println(result);
+
         } else {
             out.println("ERR Unknown command: " + inputLine);
         }
