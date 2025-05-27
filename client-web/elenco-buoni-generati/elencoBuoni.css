@@ -237,3 +237,40 @@ a{
   }
   
 }
+.order-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.order-table th,
+.order-table td {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 1px solid #747474;
+}
+
+.order-table th {
+    font-weight: 400;
+}
+
+.order-table td {
+    font-weight: 400;
+    color: #747474;
+    font-size: 1.875rem;
+    line-height: 2.5rem;
+}
+
+.order-table thead th {
+    text-transform: none;
+    padding-bottom: 1.5rem;
+}
+
+.order-table tr {
+    position: relative;
+    overflow: hidden;
+}
+
+.order-table td {
+    position: relative;
+    z-index: 1;
+}

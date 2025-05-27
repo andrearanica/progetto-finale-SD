@@ -30,7 +30,7 @@
             Registrati
             <span class="underline"></span>
           </button>
-          <form class="form form-signup">
+          <form class="form form-signup" id="formRegistrazione">
             <fieldset>
               <legend>Per favore, inserisci nome, cognome, email codice fiscale validi per registrarti.</legend>
               <div class="input-block">
@@ -59,6 +59,7 @@
       const API_URI = "http://localhost:8080";
       
       // Gestisco le animazioni della pagina
+      
       const switchers = [...document.querySelectorAll('.switcher')]
 
       switchers.forEach(item => {
@@ -68,14 +69,81 @@
 	      })
       })
 
-      window.onload = init();
+      // Aggiungo EventListener per il form di registrazione
+      document.getElementById('formRegistrazione').addEventListener('submit', async function(event) {
+        event.preventDefault(); // Prevent default form submission
 
-      async function init() {
-        // Iniziare qui.
-      }
+        // Serializzo i dati contenuti nel form di registrazione in JSON
+        const formData = new FormData(this);
+        const jsonData = {};
+
+        formData.forEach((value, key) => {
+          jsonData[key] = value;
+        });
+
+        // Controllo se l'e-mail è già in uso
+        try {
+          const controlloEmail = await fetch('http://localhost:8080/registrationi', {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+
+          if (!controlloEmail.ok) {
+            const dettagliErrore = await checkResponse.text();
+            throw new Error('È stato riscontrato un errore con la mail. Il server ha risposto nella seguente maniera: ' + dettagliErrore);
+          }
+
+          const emails = await checkResponse.json(); // Il server dovrebbe ritornare un array di email
+          const email = formData.get('signup-email');
+
+          if (emails.includes(email)) {
+            alert('Questa mail risulta essere già in uso. Si prega di usarne una nuova.');
+            window.location.reload(); // Aggiorna la pagina
+            return;
+          }
+        } catch (error) {
+          console.error('Errore:', error.message);
+          alert('È stato riscontrato un errore con la mail. Si prega di tentare di nuovo.');
+          return;
+        }
+        /*
+        // Proceed with registration if email is not in use
+        try {
+          const response = await fetch('http://localhost:8080/registrations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
+          });
+
+          if (!response.ok) {
+            const errorDetails = await response.text();
+            throw new Error('Error registering user. Server responded with: ' + errorDetails);
+          }
+
+          // Handle successful registration
+          const userId = await response.json(); // Extract user ID from response
+          console.log('User ID:', userId);
+          sessionStorage.setItem('sessionToken', userId); // Store the session token
+
+          // Wait 0.5 second before redirecting
+          setTimeout(() => {
+            window.location.replace('./userid.html?userId=' + userId);
+          }, 500);
+          resetRegistrationForm(); // Reset form after successful registration
+
+        } catch (error) {
+          console.error('Error:', error.message);
+          const requestBodyDebugInfo = JSON.stringify(jsonData, null, 2); // Pretty print JSON
+          alert('Error registering user. Please try again. Debug info: ' + error.message + '\nRequest Body: ' + requestBodyDebugInfo);
+        }*/
+      });
 
     </script>
   </body>
 
 </html>
-
