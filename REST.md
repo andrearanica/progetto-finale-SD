@@ -4,7 +4,7 @@
 
 ## `/users`
 
-### GET
+### ✅​ GET​
 
 **Descrizione**: restituisce le informazioni su tutti gli utenti registrati nel sistema.
 
@@ -12,11 +12,11 @@
 
 **Header**: nessuno.
 
-**Risposta**: una lista contenenti oggetti che hanno come campi `name`, `surname`, `email` e `fiscalCode`.
+**Risposta**: una lista contenenti oggetti che hanno come campi `name`, `surname`, `email`, `fiscalCode`, `balance` e `vouchers` (lista di `voucher`).
 
 **Codici di stato restituiti**: `200 OK`.
 
-### POST
+### ✅​ POST
 
 **Descrizione**: aggiunge un utente al sistema.
 
@@ -35,13 +35,29 @@
 
 ## `/users/{fiscalCode}`
 
-### GET
+### ✅ ​GET
 
 **Descrizione**: restituisce le informazioni su un preciso utente del sistema.
 
 **Parametri**: fiscalCode, ossia il codice fiscale dell'utente.
 
 **Header**: nessuno.
+
+**Risposta**: un oggetto User, che ha come campi `name`, `surname`, `email`, `fiscalCode` e `balance`.
+
+**Codici di stato restituiti**: 
+* `200 OK`
+* `404 Not Found` se il codice fiscale non è registrato nel sistema.
+
+### ✅​ PUT
+
+**Descrizione**: sistituisce un utente nel sistema.
+
+**Parametri**: fiscalCode, ossia il codice fiscale dell'utente.
+
+**Header**: nessuno.
+
+**Body**: una rappresentazione di User che contiene i nuovi dati da assegnare all'utente.
 
 **Risposta**: un oggetto User, che ha come campi `name`, `surname`, `email`, `fiscalCode` e `balance`.
 
