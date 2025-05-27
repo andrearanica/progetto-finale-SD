@@ -1,0 +1,4 @@
+-test valore-di-test
+-test2 valore-di-test2
++lista elem1 elem2 elem3
++listone elemento1 elemento2 elemento3

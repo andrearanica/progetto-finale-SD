@@ -26,6 +26,13 @@ Il server Web utilizza Jetty e Jersey. Si può avviare eseguendo `mvn jetty:run`
 
 ### Database
 
+Il db carica dei dati all'avvio dal file `database/initialData.txt`.
+Si presuppone che il db venga eseguito dalla cartella `database/`.
+Il formato di quel file è il seguente:
+- `-key value` per i valori di tipo stringa
+- `+key value1 value2 value3 ...` per i valori di tipo lista
+
+
 Il database è una semplice applicazione Java. Si possono utilizzare i seguenti comandi Maven:
 
 * `mvn clean`: per ripulire la cartella dai file temporanei,
