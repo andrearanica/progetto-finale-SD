@@ -10,6 +10,10 @@ Esistono solo due tipi di dati:
 - string
 - list
 
+Questi tipi vengono memorizzati in hash map completamenti separati,
+quindi è possibile utilizzari chiavi uguali per memorizzare sia stringhe che list.
+I comandi che operano su liste hanno il suffisso `l` (es. `set` e `setl`).
+
 Tutta la comunicazione avviene in *ASCII*, non sono ammessi caratteri al di fuori dello standard.
 Ogni messaggio è composto da un comando, opzionalmente un valore, e un delimitatore `\n`.
 Per immagazzinare un `\n` all'interno di una stringa deve può essere sostituito da `\\n`.
@@ -33,6 +37,8 @@ COMMAND ARG ARG\n
 
 ### GET
 
+Ritorna l'elemento (stringa) con la chiave.
+
 ```
 GET key
 ```
@@ -45,6 +51,8 @@ GET key
 ```
 
 ### GETL
+
+Ritorna la lista con la chiave.
 
 ```
 GETL key
@@ -68,6 +76,8 @@ GETL key index
 
 ### SET
 
+Salva il valore con la chiave.
+
 ```
 SET key value
 ```
@@ -81,6 +91,8 @@ SET key value
 
 ### SETL
 
+Salva la lista con la chiave.
+
 ```
 SETL key value1 value2 value3
 ```
@@ -92,10 +104,12 @@ SETL key value1 value2 value3
 << OK
 ```
 
-### PUSHL
+### ADDL
+
+Aggiunge un elemento alla lista.
 
 ```
-PUSHL key value
+ADDL key value
 ```
 
 #### Esempio
@@ -104,17 +118,19 @@ PUSHL key value
 >> SETL key value1 value2
 << OK
 ---
->> PUSHL key value3
+>> ADDL key value3
 << OK
 ---
 >> GETL key
 << OK value1 value2 value3
 ```
 
-### POPL
+### REMOVEL
+
+Rimuove l'elemento dalla lista.
 
 ```
-POPL key
+REMOVEL key
 ```
 
 #### Esempio
@@ -123,14 +139,16 @@ POPL key
 >> SETL key value1 value2 value3
 << OK
 ---
->> POPL key
-<< OK value3
+>> REMOVEL key value3
+<< OK
 ---
 >> GETL key
 << OK value1 value2
 ```
 
 ### CLEAR
+
+Rimuove l'elemento (stringa) dal database.
 
 ```
 CLEAR key
@@ -143,9 +161,24 @@ CLEAR key
 << OK
 ```
 
+### CLEARL
+
+Rimuove l'elemento (lista) dal database.
+
+```
+CLEARL key
+```
+
+#### Esempio
+
+```
+>> CLEARL key
+<< OK
+```
+
 ## Risposte
 
 Le risposte sono di due tipi
 
-- `OK` / `OK value`
-- `ERR error`
+- `OK` / `OK value`: in caso di successo dell'operazione
+- `ERR error`: in caso di errore

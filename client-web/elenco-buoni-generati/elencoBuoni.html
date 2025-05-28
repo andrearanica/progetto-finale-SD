@@ -17,7 +17,7 @@
       <div class="menuContent">
         <ul>
           <li><a href="../stato-globale-sistema/home.html">HOME</a></li>
-          <li><a href="inserisciBuono.html">INSERISCI BUONO</a></li>
+          <li><a href="../inserisci-buono/inserisciBuono.html">INSERISCI BUONO</a></li>
           <li><a href="elencoBuoni.html">ELENCO BUONI GENERATI</a></li>
           <li><a href="../index.html">ESCI</a></li>
         </ul>
@@ -30,17 +30,24 @@
       <h1 style="font-family:'Franklin Gothic Medium', 
       'Arial Narrow', Arial, sans-serif; font-size:xx-large; display: flex; 
       justify-content: center; align-items: center; height: 10vh;">ELENCO BUONI GENERATI</h1>
+      Saldo di contributo disponibile: 
+      </br>Quantità di contributo spesa in buoni consumati:
+      </br>Quantità di contributo spesa in buoni ancora non consumati:
+      </br></br>
+      <table class="order-table">
+        <thead>
+            <tr>
+                <th>Importo</th>
+                <th>Stato</th>
+                <th>Tipologia di bene assegnato</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
     </div>
   
     <script>
-      const API_URI = "http://localhost:8080";
-
-      window.onload = init();
-
-      async function init() {
-        // Iniziare qui.
-      }
-
     </script>
   </body>
 

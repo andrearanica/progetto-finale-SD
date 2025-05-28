@@ -30,6 +30,21 @@
       <h1 style="font-family:'Franklin Gothic Medium', 
       'Arial Narrow', Arial, sans-serif; font-size:xx-large; display: flex; 
       justify-content: center; align-items: center; height: 10vh;">INSERISCI NUOVO BONUS</h1>
+      <form action="/submit" method="post">
+      </br>Inserisci importo: <textarea name="importo" id="importo" cols="30" rows="1">Inserisci importo (in euro)</textarea>
+      </br>Inserisci tipologia del bene acquistato: <select name="cars" id="cars">
+        <option value="cinema">Cinema</option>
+        <option value="musica">Musica</option>
+        <option value="concerti" selected>Concerti</option>
+        <option value="eventiCulturali">Eventi culturali</option>
+        <option value="libri">Libri</option>
+        <option value="musei">Musei</option>
+        <option value="strumentiMusicali">Strumenti Musicali</option>
+        <option value="teatro">Teatro</option>
+        <option value="danza">Danza</option>
+      </select>
+      </br><button type="submit">Invia</button>
+      </form>
     </div>
   
     <script>
