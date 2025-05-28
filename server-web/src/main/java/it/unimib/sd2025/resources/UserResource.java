@@ -44,6 +44,21 @@ public class UserResource {
         user.setVouchers(new ArrayList<Voucher>());
 
         users.put(user.getFiscalCode(), user);
+
+        user = new User();
+        user.setFiscalCode("RSSMRA80A01B138X");
+        user.setEmail("mariorossi@gmail.com");
+        user.setBalance(490);
+        user.setName("Mario");
+        user.setSurname("Rossi");
+        user.setVouchers(new ArrayList<Voucher>());
+
+        Voucher voucher = new Voucher();
+        voucher.setId(0);
+        voucher.setValue(10);
+        user.getVouchers().add(voucher);
+
+        users.put(user.getFiscalCode(), user);
     }
 
     @GET
@@ -113,15 +128,17 @@ public class UserResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getUserByFiscalCode(@PathParam("fiscalCode") String fiscalCode) {
+        User user = null;
+
         synchronized (users) {
-            for (User user : users.values()) {
-                if (user.getFiscalCode().equals(fiscalCode)) {
-                    return Response.ok(user).build();
-                }
-            }    
+            user = findUserByFiscalCode(fiscalCode);
         }
 
-        return Response.status(Response.Status.NOT_FOUND).build();
+        if (user != null) {
+            return Response.ok(user).build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
     }
 
     @Path("/{fiscalCode}")
@@ -155,5 +172,136 @@ public class UserResource {
         } catch (JsonbException e) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
+    }
+
+    @GET
+    @Path("/{fiscalCode}/vouchers")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getUserVouchers(@PathParam("fiscalCode") String fiscalCode) {
+        User user;
+
+        synchronized(users) {
+            user = findUserByFiscalCode(fiscalCode);
+        }
+
+        if (user != null) {
+            return Response.ok(user).build();
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+    }
+
+    @POST
+    @Path("/{fiscalCode}/vouchers")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response addUserVoucher(@PathParam("fiscalCode") String fiscalCode, Voucher voucher) {
+        User user = null;
+
+        synchronized (users) {
+            user = findUserByFiscalCode(fiscalCode);
+        }
+
+        if (user != null) {
+            // I check that the given voucher has a valid value
+            if (voucher.getValue() > 0 && voucher.getValue() <= user.getBalance()) {
+                voucher.setId(user.getVouchers().size());
+                user.setBalance(user.getBalance() - voucher.getValue());
+                List<Voucher> vouchers = user.getVouchers();
+                vouchers.add(voucher);
+                return Response.ok(voucher).build();
+            } else {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+    }
+
+    @GET
+    @Path("/{fiscalCode}/vouchers/{voucherId}")
+    public Response getUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId) {
+        User user;
+
+        synchronized (users) {
+            user = findUserByFiscalCode(fiscalCode);
+        }
+
+        if (user != null) {
+            Voucher voucher;
+            synchronized (users) {
+                voucher = findUserVoucherById(user, voucherId);
+            }
+            if (voucher != null) {
+                return Response.ok(voucher).build();
+            } else {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+    }
+
+    // TODO test this method
+    @PUT
+    @Path("/{fiscalCode}/vouchers/{voucherId}")
+    public Response modifyUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId, Voucher voucher) {
+        User user;
+
+        synchronized (users) {
+            user = findUserByFiscalCode(fiscalCode);
+        }
+
+        if (user != null) {
+            Voucher voucherToChange;
+            synchronized (users) {
+                voucherToChange = findUserVoucherById(user, voucherId);
+            }
+            if (voucher != null) {
+                // If the voucher is not consumed and the new one is consumed, I change its property
+                if (voucher.isConsumed() && !voucherToChange.isConsumed()) {
+                    voucherToChange.setConsumed(voucher.isConsumed());
+                } else if (!voucher.isConsumed() && voucherToChange.isConsumed()) {
+                    return Response.status(Response.Status.BAD_REQUEST).build();
+                }
+
+                // If the user wants to change the value of a consumed voucher, I return an error
+                if (voucher.getValue() != voucherToChange.getValue() && voucherToChange.isConsumed()) {
+                    return Response.status(Response.Status.BAD_REQUEST).build();
+                }
+
+                if (voucher.getValue() > 0 && voucher.getValue() <= user.getBalance()) {
+                    float balanceDifference = voucherToChange.getValue() - voucher.getValue();
+                    user.setBalance(user.getBalance() - balanceDifference);
+                    voucherToChange.setValue(voucher.getValue());
+                } else {
+                    return Response.status(Response.Status.BAD_REQUEST).build();
+                }
+
+                return Response.ok(voucher).build();
+            } else {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+    }
+
+    private User findUserByFiscalCode(String fiscalCode) {
+        for (User user : users.values()) {
+            if (user.getFiscalCode().equals(fiscalCode)) {
+                return user;
+            }
+        }
+        return null;
+    }
+
+    private Voucher findUserVoucherById(User user, int voucherId) {
+        for (Voucher voucher : user.getVouchers()) {
+            if (voucher.getId() == voucherId) {
+                return voucher;
+            }
+        }
+        return null;
     }
 }

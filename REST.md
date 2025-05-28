@@ -67,7 +67,7 @@
 
 ## `/users/{fiscalCode}/vouchers/`
 
-### GET
+### ✅ GET
 
 **Descrizione**: restituisce le informazioni su tutti i voucher generati da un preciso utente del sistema.
 
@@ -81,7 +81,7 @@
 * `200 OK`
 * `404 Not Found` se il codice fiscale non è registrato nel sistema.
 
-### POST
+### ✅ POST
 
 **Descrizione**: genera un voucher da associare all'utente specificato.
 
@@ -100,7 +100,7 @@
 
 ## `/users/{fiscalCode}/vouchers/{voucherId}`
 
-### GET
+### ✅ GET
 
 **Descrizione**: restituisce le informazioni su uno specifico voucher di un utente.
 
@@ -126,7 +126,7 @@
 
 **Header**: nessuno.
 
-**Body richiesta**: solo un campo, `consumed` che può valere `true` o `false`.
+**Body richiesta**: un oggetto `Voucher` di cui verrà preso solamente il campo `consumed`.
 
 **Risposta**: restituisce la nuova rappresentazione della risorsa, con le modifiche richieste.
 
