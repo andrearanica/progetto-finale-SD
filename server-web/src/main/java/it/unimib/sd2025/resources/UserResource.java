@@ -268,9 +268,13 @@ public class UserResource {
                 // First I change the voucher value if needed
                 if (valueHasToBeChanged) {
                     if (!voucherToChange.isConsumed() && newValueIsInValidRange) {
-                        float balanceDifference = Math.abs(voucherToChange.getValue() - voucher.getValue());
-                        user.setBalance(user.getBalance() - balanceDifference);
                         voucherToChange.setValue(voucher.getValue());
+
+                        // After changing the value, I calculate the new balance of the user
+                        user.setBalance(START_BALANCE);
+                        for (Voucher v : user.getVouchers()) {
+                            user.setBalance(user.getBalance() - v.getValue());
+                        }
                     } else {
                         return Response.status(Response.Status.BAD_REQUEST).build();
                     }
