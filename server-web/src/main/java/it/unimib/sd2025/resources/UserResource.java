@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.print.attribute.standard.Media;
+
 import it.unimib.sd2025.models.User;
 import it.unimib.sd2025.models.Voucher;
 
@@ -242,9 +244,9 @@ public class UserResource {
         }
     }
 
-    // TODO test this method
     @PUT
     @Path("/{fiscalCode}/vouchers/{voucherId}")
+    @Consumes(MediaType.APPLICATION_JSON)
     public Response modifyUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId, Voucher voucher) {
         User user;
 
@@ -257,30 +259,62 @@ public class UserResource {
             synchronized (users) {
                 voucherToChange = findUserVoucherById(user, voucherId);
             }
-            if (voucher != null) {
-                // If the voucher is not consumed and the new one is consumed, I change its property
-                if (voucher.isConsumed() && !voucherToChange.isConsumed()) {
-                    voucherToChange.setConsumed(voucher.isConsumed());
-                } else if (!voucher.isConsumed() && voucherToChange.isConsumed()) {
+            if (voucherToChange != null) {
+                boolean valueHasToBeChanged = (voucher.getValue() != voucherToChange.getValue());
+                boolean hasToBecomeConsumed = (voucher.isConsumed() && !voucherToChange.isConsumed());
+                boolean newValueIsInValidRange = (voucher.getValue() > 0 && voucher.getValue() <= user.getBalance());
+                boolean wantsToBecomeUnconsumed = (!voucher.isConsumed());
+
+                // First I change the voucher value if needed
+                if (valueHasToBeChanged) {
+                    if (!voucherToChange.isConsumed() && newValueIsInValidRange) {
+                        float balanceDifference = Math.abs(voucherToChange.getValue() - voucher.getValue());
+                        user.setBalance(user.getBalance() - balanceDifference);
+                        voucherToChange.setValue(voucher.getValue());
+                    } else {
+                        return Response.status(Response.Status.BAD_REQUEST).build();
+                    }
+                }
+
+                // Then I check if the user wants to change the consumed property
+                if (voucherToChange.isConsumed() && wantsToBecomeUnconsumed) {
                     return Response.status(Response.Status.BAD_REQUEST).build();
                 }
 
-                // If the user wants to change the value of a consumed voucher, I return an error
-                if (voucher.getValue() != voucherToChange.getValue() && voucherToChange.isConsumed()) {
-                    return Response.status(Response.Status.BAD_REQUEST).build();
+                if (hasToBecomeConsumed) {
+                    voucherToChange.setConsumed(true);
                 }
 
-                if (voucher.getValue() > 0 && voucher.getValue() <= user.getBalance()) {
-                    float balanceDifference = voucherToChange.getValue() - voucher.getValue();
-                    user.setBalance(user.getBalance() - balanceDifference);
-                    voucherToChange.setValue(voucher.getValue());
-                } else {
-                    return Response.status(Response.Status.BAD_REQUEST).build();
-                }
-
-                return Response.ok(voucher).build();
+                return Response.ok(voucherToChange).build();
             } else {
                 return Response.status(Response.Status.NOT_FOUND).build();
+            }
+        } else {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+    }
+
+    @DELETE
+    @Path("/{fiscalCode}/vouchers/{voucherId}")
+    public Response removeUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId) {
+        User user;
+
+        synchronized (users) {
+            user = findUserByFiscalCode(fiscalCode);
+        }
+
+        if (user != null) {
+            Voucher voucher;
+            synchronized (users) {
+                voucher = findUserVoucherById(user, voucherId);
+            }
+            if (!voucher.isConsumed()) {
+                synchronized (users) {
+                    user.getVouchers().remove(voucher);
+                    return Response.ok().build();
+                }
+            } else {
+                return Response.status(Response.Status.BAD_REQUEST).build();
             }
         } else {
             return Response.status(Response.Status.NOT_FOUND).build();

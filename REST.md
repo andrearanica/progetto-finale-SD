@@ -116,7 +116,7 @@
 * `200 OK`
 * `404 Not Found` se il codice fiscale non è registrato nel sistema oppure se non esiste un voucher con l'id fornito.
 
-### PUT
+### ✅ PUT
 
 **Descrizione**: modifica un voucher associato all'utente specificato.
 
@@ -135,7 +135,7 @@
 * `400 Bad request` se i dati forniti non sono validi.
 * `404 Not Found` se il codice fiscale non è registrato nel sistema oppure se non esiste un voucher con l'id fornito.
 
-### DELETE
+### ✅ DELETE
 
 **Descrizione**: elimina un voucher associato all'utente specificato.
 
