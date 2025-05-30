@@ -14,7 +14,7 @@
             Autenticazione 
             <span class="underline"></span>
           </button>
-          <form class="form form-login">
+          <form class="form form-login" id="formAutenticazione">
             <fieldset>
               <legend>Per favore, inserisci un codice fiscale valido per autenticarti.</legend>
               <div class="input-block">
@@ -64,10 +64,105 @@
 
       switchers.forEach(item => {
 	      item.addEventListener('click', function() {
-		      switchers.forEach(item => item.parentElement.classList.remove('is-active'))
-		      this.parentElement.classList.add('is-active')
-	      })
-      })
+		      switchers.forEach(item => item.parentElement.classList.remove('is-active'));
+		      this.parentElement.classList.add('is-active');
+	      });
+      });
+
+      /*
+      // GESTIONE DELLA AUTENTICAZIONE
+      async function createCollectionOnPageLoad(collectionCF) {
+        try {
+          // Prepara il corpo della richiesta in formato JSON con la chiave "collectionCF"
+          const requestBody = JSON.stringify({ collectionCF });
+
+          const response = await fetch('http://localhost:8080/collections', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: requestBody // Usa il corpo della richiesta preparato
+          });
+
+          if (!response.ok) {
+            // Se il server risponde con un errore, registra i dettagli dell'errore
+            const errorDetails = await response.json();
+            console.error('Error creating collection. Server responded with:', errorDetails);
+          } else {
+            // Registra il messaggio di successo
+            const successMessage = await response.json();
+            console.log(successMessage);
+          }
+        } catch (error) {
+          console.error('Error:', error);
+        }
+      }
+
+      // Chiama la funzione createCollection non appena la pagina viene caricata
+      window.onload = function() {
+        createCollectionOnPageLoad("registrations");
+      };
+
+      function resetLoginForm() {
+        // Reset the login form fields
+        document.getElementById('login-form').reset();
+      }
+
+      document.getElementById('create-account').addEventListener('click', function() {
+        // Redirect to the account creation page
+        window.location.replace('../registration-page/registration.html');
+      });
+
+      document.getElementById('login-form').addEventListener('submit', async function (event) {
+        event.preventDefault(); // Prevent the form from submitting in the traditional way
+
+        // Serialize form data into a JSON object
+        const formData = new FormData(this);
+        const jsonData = {};
+
+        // Initialize userId as empty string
+        jsonData.userId = "";
+
+        formData.forEach((value, key) => {
+          jsonData[key] = value;
+        });
+
+        // Tento l'autenticazione mandando una richiesta di tipo POST
+        try {
+          const response = await fetch('http://localhost:8080/users', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify(jsonData)
+          });
+
+          if (!response.ok) {
+            // If the server responds with an error, throw an exception
+            const errorDetails = await response.text();
+            throw new Error('Error logging in. Server responded with: ' + errorDetails);
+          }
+
+          // On successful login, store the session token and redirect to the homepage
+          sessionStorage.setItem('sessionToken', jsonData.userId);
+          window.location.replace('../home-page/homepage.html');
+          resetLoginForm(); // Reset the form fields
+        } catch (error) {
+          console.error('Error:', error.message);
+          // Prepare debug information for the error message
+          const requestBodyDebugInfo = JSON.stringify(jsonData, null, 2); // Pretty print JSON
+          // Display an error alert with debug information
+          alert('Error logging in. Please try again. Debug info: ' + error.message + '\nRequest Body: ' + requestBodyDebugInfo);
+        }
+      });
+      */
+
+      // GESTIONE DELLA REGISTRAZIONE
+      // Reset della registrazione
+      function resetRegistrationForm() {
+        document.getElementById('formRegistrazione').reset();
+      }
 
       // Aggiungo EventListener per il form di registrazione
       document.getElementById('formRegistrazione').addEventListener('submit', async function(event) {
@@ -83,7 +178,7 @@
 
         // Controllo se l'e-mail è già in uso
         try {
-          const controlloEmail = await fetch('http://localhost:8080/registrationi', {
+          const controlloEmail = await fetch('http://localhost:8080/users', {
             method: 'GET',
             headers: {
               'Accept': 'application/json'
@@ -96,7 +191,7 @@
           }
 
           const emails = await checkResponse.json(); // Il server dovrebbe ritornare un array di email
-          const email = formData.get('signup-email');
+          const email = formData.get('email');
 
           if (emails.includes(email)) {
             alert('Questa mail risulta essere già in uso. Si prega di usarne una nuova.');
@@ -108,10 +203,10 @@
           alert('È stato riscontrato un errore con la mail. Si prega di tentare di nuovo.');
           return;
         }
-        /*
-        // Proceed with registration if email is not in use
+        
+        // Se la email non è ancora in uso proseguo con la registrazione
         try {
-          const response = await fetch('http://localhost:8080/registrations', {
+          const response = await fetch('http://localhost:8080/users', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -122,25 +217,25 @@
 
           if (!response.ok) {
             const errorDetails = await response.text();
-            throw new Error('Error registering user. Server responded with: ' + errorDetails);
+            throw new Error('È stato risconstrato un errore con la registrazione. Il server ha risposto nella seguente maniera: ' + errorDetails);
           }
 
-          // Handle successful registration
-          const userId = await response.json(); // Extract user ID from response
-          console.log('User ID:', userId);
-          sessionStorage.setItem('sessionToken', userId); // Store the session token
+          // Gestione di una registrazione avvenuta con successo
+          const fiscalCode = await response.json(); // Estraggo codice fiscale
+          console.log('Codice Fiscale:', fiscalCode);
+          sessionStorage.setItem('sessionToken', fiscalCode); // Carico all'interno della sessione
 
-          // Wait 0.5 second before redirecting
+          // Aspetta 0.5 secondi prima di reindirizzare
           setTimeout(() => {
-            window.location.replace('./userid.html?userId=' + userId);
+            window.location.replace('../stato-globale-sistema/home.html');
           }, 500);
-          resetRegistrationForm(); // Reset form after successful registration
+          resetRegistrationForm(); // Resetta credenziali della registrazione a seguito del cambio di pagina
 
         } catch (error) {
-          console.error('Error:', error.message);
+          console.error('Errore:', error.message);
           const requestBodyDebugInfo = JSON.stringify(jsonData, null, 2); // Pretty print JSON
-          alert('Error registering user. Please try again. Debug info: ' + error.message + '\nRequest Body: ' + requestBodyDebugInfo);
-        }*/
+          alert('Errore nella registrazione utente. Si prega di tentare di nuovo. Debug info: ' + error.message + '\nRequest Body: ' + requestBodyDebugInfo);
+        }
       });
 
     </script>
