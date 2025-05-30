@@ -1,4 +1,9 @@
--test valore-di-test
--test2 valore-di-test2
-+lista elem1 elem2 elem3
-+listone elemento1 elemento2 elemento3
++fiscalCodes RNCNDR04T22A794U RSSMRA80A01B138X
+-RNCNDR04T22A794U.name Andrea
+-RNCNDR04T22A794U.surname Ranica
+-RNCNDR04T22A794U.email andrearanica2004@gmail.com
+-RNCNDR04T22A794U.balance 500
+-RSSMRA80A01B138X.name Mario
+-RSSMRA80A01B138X.surname Rossi
+-RSSMRA80A01B138X.email mariorossi@gmail.com
+-RSSMRA80A01B138X.balance 500

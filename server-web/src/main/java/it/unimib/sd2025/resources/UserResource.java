@@ -1,5 +1,6 @@
 package it.unimib.sd2025.resources;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -11,6 +12,8 @@ import javax.print.attribute.standard.Media;
 
 import it.unimib.sd2025.models.User;
 import it.unimib.sd2025.models.Voucher;
+import it.unimib.sd2025.db.IUserDao;
+import it.unimib.sd2025.db.UserDaoTcp;
 
 import jakarta.json.JsonException;
 import jakarta.json.bind.JsonbBuilder;
@@ -32,41 +35,14 @@ import jakarta.ws.rs.core.Response.Status;
  */
 @Path("users")
 public class UserResource {
+    private IUserDao userDao = new UserDaoTcp("localhost", 3030);
     private static Map<String, User> users = new HashMap<String, User>();
     private static final float START_BALANCE = 500;
-
-    // TODO remove this static attribute and use DB
-    static {
-        User user = new User();
-        user.setFiscalCode("RNCNDR04T22A794U");
-        user.setEmail("andrearanica2004@gmail.com");
-        user.setBalance(500);
-        user.setName("Andrea");
-        user.setSurname("Ranica");
-        user.setVouchers(new ArrayList<Voucher>());
-
-        users.put(user.getFiscalCode(), user);
-
-        user = new User();
-        user.setFiscalCode("RSSMRA80A01B138X");
-        user.setEmail("mariorossi@gmail.com");
-        user.setBalance(490);
-        user.setName("Mario");
-        user.setSurname("Rossi");
-        user.setVouchers(new ArrayList<Voucher>());
-
-        Voucher voucher = new Voucher();
-        voucher.setId(0);
-        voucher.setValue(10);
-        user.getVouchers().add(voucher);
-
-        users.put(user.getFiscalCode(), user);
-    }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getUsers() {
-        return Response.ok(users).build();
+        return Response.ok(userDao.getUsers()).build();
     }
 
     @POST
