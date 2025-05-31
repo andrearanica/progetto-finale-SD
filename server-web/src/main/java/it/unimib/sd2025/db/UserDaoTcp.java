@@ -6,10 +6,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.InetAddress;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -25,7 +26,7 @@ public class UserDaoTcp implements IUserDao {
     public Map<String, User> getUsers() {
         System.out.println("[DEBUG] Connected to DB server");
 
-        String[] fiscalCodes = getFiscalCodes();
+        List<String> fiscalCodes = getFiscalCodes();
 
         Map<String, User> users = new HashMap<String, User>();
 
@@ -50,7 +51,7 @@ public class UserDaoTcp implements IUserDao {
             user.setName(userName);
             user.setSurname(userSurname);
             user.setEmail(userEmail);
-            user.setBalance(Float.parseFloat(userBalanceRaw));
+            user.setBalance(Float.parseFloat(userBalanceRaw.replace(",", ".")));
             user.setVouchers(userVouchers);
 
             users.put(fiscalCode, user);
@@ -66,14 +67,14 @@ public class UserDaoTcp implements IUserDao {
      * @param socketOutputStream
      * @return
      */
-    public String[] getFiscalCodes() {
+    public List<String> getFiscalCodes() {
         String rawFiscalCodes = executeCommand("GETL fiscalCodes");
         
         System.out.printf("[DEBUG] Fiscal codes: %s\n", rawFiscalCodes);
         
         String[] fiscalCodes = rawFiscalCodes.split(" ");
 
-        return fiscalCodes;
+        return new ArrayList<>(Arrays.asList(fiscalCodes));
     }
 
     /**
@@ -150,6 +151,22 @@ public class UserDaoTcp implements IUserDao {
             return null;            
         }
         return serverResponse.split(" ")[1];
+    }
+
+    public void addUser(User user) {
+        List<String> fiscalCodes = getFiscalCodes();
+
+        try {
+            fiscalCodes.add(user.getFiscalCode());
+            executeCommand("SETL fiscalCodes " + String.join(" ", fiscalCodes));
+            
+            executeCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "name", user.getName()));
+            executeCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "surname", user.getSurname()));
+            executeCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "email", user.getEmail()));
+            executeCommand(String.format("SET %s.%s %f", user.getFiscalCode(), "balance", user.getBalance()));
+        } catch (Exception e) {
+            System.out.println("[DEBUG] Exception: " + e.getClass() + "(" + e.getMessage() + ")");
+        }
     }
 
     /**

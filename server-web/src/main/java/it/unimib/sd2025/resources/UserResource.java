@@ -60,7 +60,7 @@ public class UserResource {
         user.setBalance(START_BALANCE);
 
         synchronized(users) {
-            users.put(user.getFiscalCode(), user);
+            userDao.addUser(user);
         }
 
         try {
@@ -302,7 +302,7 @@ public class UserResource {
     }
 
     private User findUserByFiscalCode(String fiscalCode) {
-        for (User user : users.values()) {
+        for (User user : userDao.getUsers().values()) {
             if (user.getFiscalCode().equals(fiscalCode)) {
                 return user;
             }
