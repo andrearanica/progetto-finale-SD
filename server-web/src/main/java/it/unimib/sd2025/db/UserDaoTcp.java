@@ -36,28 +36,24 @@ public class UserDaoTcp implements IUserDao {
             }
 
             // FIXME remove this try-catch
-            try {
-                String userName = getUserProperty(fiscalCode, "name");
-                String userSurname = getUserProperty(fiscalCode, "surname");
-                String userEmail = getUserProperty(fiscalCode, "email");
-                String userBalanceRaw = getUserProperty(fiscalCode, "balance");
-                List<Voucher> userVouchers = getUserVouchers(fiscalCode);
+            String userName = getUserProperty(fiscalCode, "name");
+            String userSurname = getUserProperty(fiscalCode, "surname");
+            String userEmail = getUserProperty(fiscalCode, "email");
+            String userBalanceRaw = getUserProperty(fiscalCode, "balance");
+            List<Voucher> userVouchers = getUserVouchers(fiscalCode);
 
-                System.out.println(String.format("[DEBUG] Fetched user with\nname: %s\nsurname: %s\nemail: %s\nbalance: %s\nvouchers:" + userVouchers, 
-                                                userName, userSurname, userEmail, userBalanceRaw));
+            System.out.println(String.format("[DEBUG] Fetched user with\nname: %s\nsurname: %s\nemail: %s\nbalance: %s\nvouchers:" + userVouchers, 
+                                            userName, userSurname, userEmail, userBalanceRaw));
 
-                User user = new User();
-                user.setFiscalCode(fiscalCode);
-                user.setName(userName);
-                user.setSurname(userSurname);
-                user.setEmail(userEmail);
-                user.setBalance(Float.parseFloat(userBalanceRaw));
-                user.setVouchers(userVouchers);
+            User user = new User();
+            user.setFiscalCode(fiscalCode);
+            user.setName(userName);
+            user.setSurname(userSurname);
+            user.setEmail(userEmail);
+            user.setBalance(Float.parseFloat(userBalanceRaw));
+            user.setVouchers(userVouchers);
 
-                users.put(fiscalCode, user);
-            } catch (Exception e) {
-                System.out.println(String.format("[DEBUG] Data of user %s is missing in the DB", fiscalCode));
-            }
+            users.put(fiscalCode, user);
         }
 
         return users;
@@ -89,7 +85,7 @@ public class UserDaoTcp implements IUserDao {
      */
     public String getUserProperty(String fiscalCode, String property) {
         String serverResponse = executeCommand(String.format("GET %s.%s", fiscalCode, property));
-        if (serverResponse.equals("OK")) {
+        if (serverResponse.equals("OK ")) {
             return null;            
         }
         return serverResponse.split(" ")[1];
@@ -119,9 +115,15 @@ public class UserDaoTcp implements IUserDao {
             int voucherId = Integer.parseInt(voucherIdRaw);
 
             String voucherValueRaw = getVoucherProperty(fiscalCode, voucherId, "value");
-            String voucherConsumedRaw = getVoucherProperty(fiscalCode, voucherId, "value");
+            String voucherConsumedRaw = getVoucherProperty(fiscalCode, voucherId, "consumed");
             String voucherType = getVoucherProperty(fiscalCode, voucherId, "type");
             // TODO get also created and consumed dates
+
+            if (voucherValueRaw == null || voucherConsumedRaw == null || voucherType == null) {
+                System.out.println(String.format("[DEBUG] DB inconsistency: missing data for voucher %d of the user %s", 
+                                                 voucherId, fiscalCode));
+                continue;
+            }
 
             Voucher voucher = new Voucher();
             voucher.setId(voucherId);
@@ -143,7 +145,11 @@ public class UserDaoTcp implements IUserDao {
      * @return
      */
     public String getVoucherProperty(String fiscalCode, int voucherId, String property) {
-        return executeCommand(String.format("GET %s.voucher%i.%s", fiscalCode, voucherId, property));
+        String serverResponse = executeCommand(String.format("GET %s.voucher%d.%s", fiscalCode, voucherId, property));
+        if (serverResponse.equals("OK ")) {
+            return null;            
+        }
+        return serverResponse.split(" ")[1];
     }
 
     /**
