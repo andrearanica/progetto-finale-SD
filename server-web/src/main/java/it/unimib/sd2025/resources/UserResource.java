@@ -36,7 +36,7 @@ import jakarta.ws.rs.core.Response.Status;
 @Path("users")
 public class UserResource {
     private IUserDao userDao = new UserDaoTcp("localhost", 3030);
-    private static Map<String, User> users = new HashMap<String, User>();
+    // private static Map<String, User> users = new HashMap<String, User>();
     private static final float START_BALANCE = 500;
 
     @GET
@@ -59,7 +59,7 @@ public class UserResource {
 
         user.setBalance(START_BALANCE);
 
-        synchronized(users) {
+        synchronized(userDao) {
             userDao.addUser(user);
         }
 
@@ -94,7 +94,7 @@ public class UserResource {
     }
 
     public boolean isFiscalCodeUnique(String fiscalCode) {
-        for (String fiscalCodeKey : users.keySet()) {
+        for (String fiscalCodeKey : userDao.getUsers().keySet()) {
             if (fiscalCodeKey.equals(fiscalCode)) {
                 return false;
             }
@@ -108,7 +108,7 @@ public class UserResource {
     public Response getUserByFiscalCode(@PathParam("fiscalCode") String fiscalCode) {
         User user = null;
 
-        synchronized (users) {
+        synchronized (userDao) {
             user = findUserByFiscalCode(fiscalCode);
         }
 
@@ -126,8 +126,8 @@ public class UserResource {
     public Response modifyUserByFiscalCode(@PathParam("fiscalCode") String fiscalCode, String rawUser) {
         User userToModify = null;
         
-        synchronized (users) {
-            for (User user : users.values()) {
+        synchronized (userDao) {
+            for (User user : userDao.getUsers().values()) {
                 if (user.getFiscalCode().equals(fiscalCode)) {
                     userToModify = user;
                 }
@@ -146,6 +146,14 @@ public class UserResource {
                 userToModify.setSurname(user.getSurname());
                 userToModify.setEmail(user.getEmail());
             }
+
+            // Then I change the user attributes in the DB
+            synchronized (userDao) {
+                if (!userDao.modifyUser(userToModify)) {
+                    return Response.status(Response.Status.NOT_FOUND).build();
+                }
+            }
+
             return Response.ok(userToModify).build();
         } catch (JsonbException e) {
             return Response.status(Response.Status.BAD_REQUEST).build();
@@ -158,12 +166,12 @@ public class UserResource {
     public Response getUserVouchers(@PathParam("fiscalCode") String fiscalCode) {
         User user;
 
-        synchronized(users) {
+        synchronized(userDao) {
             user = findUserByFiscalCode(fiscalCode);
         }
 
         if (user != null) {
-            return Response.ok(user).build();
+            return Response.ok(user.getVouchers()).build();
         } else {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
@@ -176,17 +184,25 @@ public class UserResource {
     public Response addUserVoucher(@PathParam("fiscalCode") String fiscalCode, Voucher voucher) {
         User user = null;
 
-        synchronized (users) {
+        synchronized (userDao) {
             user = findUserByFiscalCode(fiscalCode);
         }
 
         if (user != null) {
             // I check that the given voucher has a valid value
             if (voucher.getValue() > 0 && voucher.getValue() <= user.getBalance()) {
-                voucher.setId(user.getVouchers().size());
+                int maxVoucherId = 0;
+                for (Voucher v : user.getVouchers()) {
+                    if (v.getId() > maxVoucherId) {
+                        maxVoucherId = v.getId();
+                    }
+                }
+
+                voucher.setId(maxVoucherId + 1);
+
                 user.setBalance(user.getBalance() - voucher.getValue());
-                List<Voucher> vouchers = user.getVouchers();
-                vouchers.add(voucher);
+                userDao.addVoucherToUser(voucher, user);
+                
                 return Response.ok(voucher).build();
             } else {
                 return Response.status(Response.Status.BAD_REQUEST).build();
@@ -201,13 +217,13 @@ public class UserResource {
     public Response getUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId) {
         User user;
 
-        synchronized (users) {
+        synchronized (userDao) {
             user = findUserByFiscalCode(fiscalCode);
         }
 
         if (user != null) {
             Voucher voucher;
-            synchronized (users) {
+            synchronized (userDao) {
                 voucher = findUserVoucherById(user, voucherId);
             }
             if (voucher != null) {
@@ -226,13 +242,13 @@ public class UserResource {
     public Response modifyUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId, Voucher voucher) {
         User user;
 
-        synchronized (users) {
+        synchronized (userDao) {
             user = findUserByFiscalCode(fiscalCode);
         }
 
         if (user != null) {
             Voucher voucherToChange;
-            synchronized (users) {
+            synchronized (userDao) {
                 voucherToChange = findUserVoucherById(user, voucherId);
             }
             if (voucherToChange != null) {
@@ -279,17 +295,17 @@ public class UserResource {
     public Response removeUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId) {
         User user;
 
-        synchronized (users) {
+        synchronized (userDao) {
             user = findUserByFiscalCode(fiscalCode);
         }
 
         if (user != null) {
             Voucher voucher;
-            synchronized (users) {
+            synchronized (userDao) {
                 voucher = findUserVoucherById(user, voucherId);
             }
             if (!voucher.isConsumed()) {
-                synchronized (users) {
+                synchronized (userDao) {
                     user.getVouchers().remove(voucher);
                     return Response.ok().build();
                 }
