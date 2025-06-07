@@ -202,6 +202,8 @@ public class UserResource {
 
                 user.setBalance(user.getBalance() - voucher.getValue());
                 userDao.addVoucherToUser(voucher, user);
+                // FIXME the POST request can also change user data
+                userDao.modifyUser(user);
                 
                 return Response.ok(voucher).build();
             } else {

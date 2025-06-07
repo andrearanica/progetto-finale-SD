@@ -7,7 +7,7 @@
 -RNCNDR04T22A794U.surname Ranica
 -RNCNDR04T22A794U.email andrearanica2004@gmail.com
 -RNCNDR04T22A794U.balance 470
--RNCNDR04T22A794U.vouchersIds 1 2
++RNCNDR04T22A794U.vouchersIds 1 2
 -RNCNDR04T22A794U.voucher1.value 10
 -RNCNDR04T22A794U.voucher1.consumed false
 -RNCNDR04T22A794U.voucher1.type Libri

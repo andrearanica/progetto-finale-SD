@@ -43,8 +43,8 @@ public class UserDaoTcp implements IUserDao {
             String userBalanceRaw = getUserProperty(fiscalCode, "balance");
             List<Voucher> userVouchers = getUserVouchers(fiscalCode);
 
-            System.out.println(String.format("[DEBUG] Fetched user with\nname: %s\nsurname: %s\nemail: %s\nbalance: %s\nvouchers:" + userVouchers, 
-                                            userName, userSurname, userEmail, userBalanceRaw));
+            // System.out.println(String.format("[DEBUG] Fetched user with\nname: %s\nsurname: %s\nemail: %s\nbalance: %s\nvouchers:" + userVouchers, 
+            //                                 userName, userSurname, userEmail, userBalanceRaw));
 
             User user = new User();
             user.setFiscalCode(fiscalCode);
@@ -69,8 +69,6 @@ public class UserDaoTcp implements IUserDao {
      */
     public List<String> getFiscalCodes() {
         String rawFiscalCodes = executeCommand("GETL fiscalCodes");
-        
-        System.out.printf("[DEBUG] Fiscal codes: %s\n", rawFiscalCodes);
         
         String[] fiscalCodes = rawFiscalCodes.split(" ");
 
@@ -106,8 +104,6 @@ public class UserDaoTcp implements IUserDao {
         String[] vouchersIds = vouchersIdsRaw.split(" ");
 
         for (String voucherIdRaw : vouchersIds) {
-            System.out.println(String.format("[DEBUG] Voucher ID: %s", voucherIdRaw));
-
             // FIXME sucks
             if (voucherIdRaw.equals("OK")) {
                 continue;
@@ -183,7 +179,8 @@ public class UserDaoTcp implements IUserDao {
             setUserProperty(user.getFiscalCode(), "name", user.getName());
             setUserProperty(user.getFiscalCode(), "surname", user.getSurname());
             setUserProperty(user.getFiscalCode(), "email", user.getEmail());
-            
+            setUserProperty(user.getFiscalCode(), "balance", ""+user.getBalance());
+
             return true;
         } else {
             System.out.println("[DEBUG] Cannot find user with fiscal code " + user.getFiscalCode());
@@ -249,7 +246,7 @@ public class UserDaoTcp implements IUserDao {
             String temp;
             while ((temp = socketInputStream.readLine()) != null) {
                 response = temp;
-                System.out.println(String.format("[DEBUG] Server response to [%s]: %s", command, response));
+                // System.out.println(String.format("[DEBUG] Server response to [%s]: %s", command, response));
             }
         } catch (IOException exception) {
             exception.printStackTrace();
