@@ -149,9 +149,7 @@ public class UserResource {
 
             // Then I change the user attributes in the DB
             synchronized (userDao) {
-                if (!userDao.modifyUser(userToModify)) {
-                    return Response.status(Response.Status.NOT_FOUND).build();
-                }
+                userDao.modifyUser(userToModify);
             }
 
             return Response.ok(userToModify).build();
@@ -191,7 +189,7 @@ public class UserResource {
         if (user != null) {
             // I check that the given voucher has a valid value
             if (voucher.getValue() > 0 && voucher.getValue() <= user.getBalance()) {
-                int maxVoucherId = 0;
+                int maxVoucherId = -1;
                 for (Voucher v : user.getVouchers()) {
                     if (v.getId() > maxVoucherId) {
                         maxVoucherId = v.getId();
@@ -268,6 +266,7 @@ public class UserResource {
                         user.setBalance(START_BALANCE);
                         for (Voucher v : user.getVouchers()) {
                             user.setBalance(user.getBalance() - v.getValue());
+                            userDao.modifyUser(user);
                         }
                     } else {
                         return Response.status(Response.Status.BAD_REQUEST).build();
@@ -282,6 +281,8 @@ public class UserResource {
                 if (hasToBecomeConsumed) {
                     voucherToChange.setConsumed(true);
                 }
+                
+                userDao.modifyUserVoucher(voucherToChange, user);
 
                 return Response.ok(voucherToChange).build();
             } else {
@@ -306,13 +307,17 @@ public class UserResource {
             synchronized (userDao) {
                 voucher = findUserVoucherById(user, voucherId);
             }
-            if (!voucher.isConsumed()) {
-                synchronized (userDao) {
-                    user.getVouchers().remove(voucher);
-                    return Response.ok().build();
+            if (voucher != null) {
+                if (!voucher.isConsumed()) {
+                    synchronized (userDao) {
+                        userDao.deleteUserVoucher(voucher, user);
+                        return Response.ok().build();
+                    }
+                } else {
+                    return Response.status(Response.Status.BAD_REQUEST).build();
                 }
             } else {
-                return Response.status(Response.Status.BAD_REQUEST).build();
+                return Response.status(Response.Status.NOT_FOUND).build();
             }
         } else {
             return Response.status(Response.Status.NOT_FOUND).build();

@@ -172,20 +172,11 @@ public class UserDaoTcp implements IUserDao {
      * @param user
      * @return boolean
      */
-    public boolean modifyUser(User user) {
-        List<String> fiscalCodes = getFiscalCodes();
-
-        if (fiscalCodes.contains(user.getFiscalCode())) {
-            setUserProperty(user.getFiscalCode(), "name", user.getName());
-            setUserProperty(user.getFiscalCode(), "surname", user.getSurname());
-            setUserProperty(user.getFiscalCode(), "email", user.getEmail());
-            setUserProperty(user.getFiscalCode(), "balance", ""+user.getBalance());
-
-            return true;
-        } else {
-            System.out.println("[DEBUG] Cannot find user with fiscal code " + user.getFiscalCode());
-            return false;
-        }
+    public void modifyUser(User user) {
+        setUserProperty(user.getFiscalCode(), "name", user.getName());
+        setUserProperty(user.getFiscalCode(), "surname", user.getSurname());
+        setUserProperty(user.getFiscalCode(), "email", user.getEmail());
+        setUserProperty(user.getFiscalCode(), "balance", ""+user.getBalance());
     }
 
     /**
@@ -199,33 +190,48 @@ public class UserDaoTcp implements IUserDao {
         executeCommand(String.format("SET %s.%s %s", fiscalCode, property, value));
     }
 
-    public boolean addVoucherToUser(Voucher voucher, User user) {
-        List<String> fiscalCodes = getFiscalCodes();
-        // TODO check that the vocher ID isn't already used
+    public void addVoucherToUser(Voucher voucher, User user) {
+        // First I add the new voucher ID to the voucherIds list of the user
+        
+        List<String> vouchersIds = new ArrayList<String>();
 
-        if (fiscalCodes.contains(user.getFiscalCode())) {
-            // First I add the new voucher ID to the voucherIds list of the user
-            
-            List<String> vouchersIds = new ArrayList<String>();
-
-            for (Voucher v : user.getVouchers()) {
-                vouchersIds.add(String.valueOf(v.getId()));
-            }
-
-            vouchersIds.add(String.valueOf(voucher.getId()));
-
-            executeCommand(String.format("SETL %s.vouchersIds %s", user.getFiscalCode(), String.join(" ", vouchersIds)));
-
-            // Then I save the voucher data in the DB
-            executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "type", voucher.getType()));
-            executeCommand(String.format("SET %s.voucher%d.%s %f", user.getFiscalCode(), voucher.getId(), "value", voucher.getValue()));
-            executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "consumed", voucher.isConsumed()));
-
-            return true;
-        } else {
-            System.out.println("[DEBUG] Cannot find user with fiscal code " + user.getFiscalCode());
-            return false;
+        for (Voucher v : user.getVouchers()) {
+            vouchersIds.add(String.valueOf(v.getId()));
         }
+
+        vouchersIds.add(String.valueOf(voucher.getId()));
+
+        executeCommand(String.format("SETL %s.vouchersIds %s", user.getFiscalCode(), String.join(" ", vouchersIds)));
+
+        // Then I save the voucher data in the DB
+        executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "type", voucher.getType()));
+        executeCommand(String.format("SET %s.voucher%d.%s %f", user.getFiscalCode(), voucher.getId(), "value", voucher.getValue()));
+        executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "consumed", voucher.isConsumed()));
+    }
+
+    public void modifyUserVoucher(Voucher voucher, User user) {
+        String fiscalCode = user.getFiscalCode();
+        int voucherId = voucher.getId();
+        executeCommand(String.format("SET %s.voucher%d.type %s", fiscalCode, voucherId, voucher.getType()));
+        executeCommand(String.format("SET %s.voucher%d.value %f", fiscalCode, voucherId, voucher.getValue()));
+        executeCommand(String.format("SET %s.voucher%d.consumed %b", fiscalCode, voucherId, voucher.isConsumed()));
+    }
+
+    public void deleteUserVoucher(Voucher voucher, User user) {
+        String fiscalCode = user.getFiscalCode();
+        int voucherId = voucher.getId();
+
+        String deleteIdCommand = String.format("REMOVEL %s.vouchersIds %d", fiscalCode, voucherId);
+        String deleteTypeCommand = String.format("CLEAR %s.voucher%d.type", fiscalCode, voucherId);
+        String deleteValueCommand = String.format("CLEAR %s.voucher%d.value", fiscalCode, voucherId);
+        String deleteConsumedCommand = String.format("CLEAR %s.voucher%d.consumed", fiscalCode, voucherId);
+
+        // TODO delete other fields when implemented
+
+        executeCommand(deleteIdCommand);
+        executeCommand(deleteTypeCommand);
+        executeCommand(deleteValueCommand);
+        executeCommand(deleteConsumedCommand);
     }
 
     /**
