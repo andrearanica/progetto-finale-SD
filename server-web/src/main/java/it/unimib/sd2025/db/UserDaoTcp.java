@@ -8,6 +8,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.reflect.Array;
 import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Arrays;
@@ -24,8 +27,6 @@ public class UserDaoTcp implements IUserDao {
     }
 
     public Map<String, User> getUsers() {
-        System.out.println("[DEBUG] Connected to DB server");
-
         List<String> fiscalCodes = getFiscalCodes();
 
         Map<String, User> users = new HashMap<String, User>();
@@ -114,9 +115,10 @@ public class UserDaoTcp implements IUserDao {
             String voucherValueRaw = getVoucherProperty(fiscalCode, voucherId, "value");
             String voucherConsumedRaw = getVoucherProperty(fiscalCode, voucherId, "consumed");
             String voucherType = getVoucherProperty(fiscalCode, voucherId, "type");
-            // TODO get also created and consumed dates
+            String voucherCreatedDateTime = getVoucherProperty(fiscalCode, voucherId, "createdDateTime");
+            String voucherConsumedDateTime = getVoucherProperty(fiscalCode, voucherId, "consumedDateTime");
 
-            if (voucherValueRaw == null || voucherConsumedRaw == null || voucherType == null) {
+            if (voucherValueRaw == null || voucherConsumedRaw == null || voucherType == null || voucherCreatedDateTime == null) {
                 System.out.println(String.format("[DEBUG] DB inconsistency: missing data for voucher %d of the user %s", 
                                                  voucherId, fiscalCode));
                 continue;
@@ -127,6 +129,11 @@ public class UserDaoTcp implements IUserDao {
             voucher.setValue(Float.parseFloat(voucherValueRaw.replace(",", ".")));
             voucher.setConsumed(Boolean.parseBoolean(voucherConsumedRaw));
             voucher.setType(voucherType);
+            
+            voucher.setCreatedDateTime(voucherCreatedDateTime);
+            if (voucherConsumedDateTime != null) {
+                voucher.setConsumedDateTime(voucherConsumedDateTime);
+            }
 
             vouchers.add(voucher);
         }
@@ -207,6 +214,7 @@ public class UserDaoTcp implements IUserDao {
         executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "type", voucher.getType()));
         executeCommand(String.format("SET %s.voucher%d.%s %f", user.getFiscalCode(), voucher.getId(), "value", voucher.getValue()));
         executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "consumed", voucher.isConsumed()));
+        executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "createdDateTime", voucher.getCreatedDateTime()));
     }
 
     public void modifyUserVoucher(Voucher voucher, User user) {

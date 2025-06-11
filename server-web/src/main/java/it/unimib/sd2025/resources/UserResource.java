@@ -53,10 +53,6 @@ public class UserResource {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
-        if (isFiscalCodeUnique(user.getFiscalCode())) {
-            System.out.println("Il codice fiscale " + user.getFiscalCode() + " è univoco");
-        }
-
         user.setBalance(START_BALANCE);
 
         synchronized(userDao) {
@@ -180,6 +176,11 @@ public class UserResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response addUserVoucher(@PathParam("fiscalCode") String fiscalCode, Voucher voucher) {
+        // First I check if the voucher is valid
+        if (!isVoucherValid(voucher)) {
+            return Response.status(Response.Status.BAD_REQUEST).build();
+        }
+
         User user = null;
 
         synchronized (userDao) {
@@ -200,7 +201,7 @@ public class UserResource {
 
                 user.setBalance(user.getBalance() - voucher.getValue());
                 userDao.addVoucherToUser(voucher, user);
-                // FIXME the POST request can also change user data
+                
                 userDao.modifyUser(user);
                 
                 return Response.ok(voucher).build();
@@ -239,7 +240,7 @@ public class UserResource {
     @PUT
     @Path("/{fiscalCode}/vouchers/{voucherId}")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response modifyUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId, Voucher voucher) {
+    public Response modifyUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId, Voucher newVoucher) {
         User user;
 
         synchronized (userDao) {
@@ -247,21 +248,22 @@ public class UserResource {
         }
 
         if (user != null) {
-            Voucher voucherToChange;
+            Voucher originalVoucher;
             synchronized (userDao) {
-                voucherToChange = findUserVoucherById(user, voucherId);
+                originalVoucher = findUserVoucherById(user, voucherId);
             }
-            if (voucherToChange != null) {
-                boolean valueHasToBeChanged = (voucher.getValue() != voucherToChange.getValue());
-                boolean hasToBecomeConsumed = (voucher.isConsumed() && !voucherToChange.isConsumed());
-                boolean newValueIsInValidRange = (voucher.getValue() > 0 && voucher.getValue() <= user.getBalance());
-                boolean wantsToBecomeUnconsumed = (!voucher.isConsumed());
 
-                // First I change the voucher value if needed
-                if (valueHasToBeChanged) {
-                    if (!voucherToChange.isConsumed() && newValueIsInValidRange) {
-                        voucherToChange.setValue(voucher.getValue());
+            if (!isModifyVoucherValid(originalVoucher, newVoucher, user)) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
 
+            if (originalVoucher != null) {
+                boolean newValueIsInValidRange = (newVoucher.getValue() > 0 && newVoucher.getValue() <= user.getBalance());
+
+                if (newVoucher.getValue() != originalVoucher.getValue()) {
+                    if (!originalVoucher.isConsumed() && newValueIsInValidRange) {
+                        originalVoucher.setValue(newVoucher.getValue());
+    
                         // After changing the value, I calculate the new balance of the user
                         user.setBalance(START_BALANCE);
                         for (Voucher v : user.getVouchers()) {
@@ -273,18 +275,20 @@ public class UserResource {
                     }
                 }
 
-                // Then I check if the user wants to change the consumed property
-                if (voucherToChange.isConsumed() && wantsToBecomeUnconsumed) {
-                    return Response.status(Response.Status.BAD_REQUEST).build();
-                }
-
-                if (hasToBecomeConsumed) {
-                    voucherToChange.setConsumed(true);
-                }
+                originalVoucher.setType(newVoucher.getType());
                 
-                userDao.modifyUserVoucher(voucherToChange, user);
+                if (!originalVoucher.isConsumed() && newVoucher.isConsumed()) {
+                    if (newVoucher.getConsumedDateTime() != null) {
+                        originalVoucher.setConsumed(newVoucher.isConsumed());
+                        originalVoucher.setConsumedDateTime(newVoucher.getConsumedDateTime());
+                    } else {
+                        return Response.status(Response.Status.BAD_REQUEST).build();
+                    }
+                }
 
-                return Response.ok(voucherToChange).build();
+                userDao.modifyUserVoucher(originalVoucher, user);
+
+                return Response.ok(originalVoucher).build();
             } else {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
@@ -340,5 +344,42 @@ public class UserResource {
             }
         }
         return null;
+    }
+
+    private boolean isVoucherValid(Voucher voucher) {
+        if (voucher.getType() == null) {
+            return false;
+        }
+        if (voucher.getValue() <= 0) {
+            return false;
+        }
+        if (voucher.getCreatedDateTime() == null) {
+            return false;
+        }
+
+        return true;
+    }
+
+    boolean isModifyVoucherValid(Voucher originalVoucher, Voucher newVoucher, User user) {
+        boolean wantsToBecomeUnconsumed = (originalVoucher.isConsumed() && !newVoucher.isConsumed());
+        boolean createdDateHasChanged = !newVoucher.getCreatedDateTime().equals(originalVoucher.getCreatedDateTime());
+        boolean consumedDateHasChanged = (originalVoucher.getConsumedDateTime() != null && !newVoucher.getConsumedDateTime().equals(originalVoucher.getConsumedDateTime()));
+
+        // The voucher cannot become unconsumed if it is consumed
+        if (originalVoucher.isConsumed() && wantsToBecomeUnconsumed) {
+            return false;
+        }
+
+        // The created date can't be changed
+        if (createdDateHasChanged) {
+            return false;
+        }
+
+        // If the consumed date is set it can't be changed
+        if (consumedDateHasChanged) {
+            return false;
+        }
+
+        return true;
     }
 }

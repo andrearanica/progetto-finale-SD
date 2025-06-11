@@ -11,6 +11,8 @@
 -RNCNDR04T22A794U.voucher1.value 10
 -RNCNDR04T22A794U.voucher1.consumed false
 -RNCNDR04T22A794U.voucher1.type Libri
+-RNCNDR04T22A794U.voucher1.createdDateTime 22/12/2025-10:12:25
 -RNCNDR04T22A794U.voucher2.value 20
 -RNCNDR04T22A794U.voucher2.consumed false
 -RNCNDR04T22A794U.voucher2.type Cinema
+-RNCNDR04T22A794U.voucher2.createdDateTime 23/11/2025-10:12:25

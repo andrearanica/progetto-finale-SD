@@ -6,8 +6,8 @@ public class Voucher {
     private int id;
     private String type;
     private float value;
-    private LocalDateTime createdDateTime;
-    private LocalDateTime consumedDateTime;
+    private String createdDateTime;
+    private String consumedDateTime;
     private boolean consumed;
 
     public int getId() {
@@ -38,22 +38,22 @@ public class Voucher {
         this.value = value;
     }
 
-    public LocalDateTime getCreatedDateTime() {
+    public String getCreatedDateTime() {
         return createdDateTime;
     }
 
-    public void setCreatedDateTime(LocalDateTime createdDateTime) {
+    public void setCreatedDateTime(String createdDateTime) {
         if (createdDateTime == null) {
             throw new RuntimeException("Created date cannot be null");
         }
         this.createdDateTime = createdDateTime;
     }
 
-    public LocalDateTime getConsumedDateTime() {
+    public String getConsumedDateTime() {
         return consumedDateTime;
     }
 
-    public void setConsumedDateTime(LocalDateTime consumedDateTime) {
+    public void setConsumedDateTime(String consumedDateTime) {
         if (consumedDateTime == null) {
             throw new RuntimeException("Consumed date cannot be null");
         }
