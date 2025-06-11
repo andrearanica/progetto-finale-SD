@@ -275,7 +275,13 @@ public class UserResource {
                     }
                 }
 
-                originalVoucher.setType(newVoucher.getType());
+                if (!originalVoucher.getType().equals(newVoucher.getType())) {
+                    if (!originalVoucher.isConsumed()) {
+                        originalVoucher.setType(newVoucher.getType());
+                    } else {
+                        return Response.status(Response.Status.BAD_REQUEST).build();
+                    }
+                }
                 
                 if (!originalVoucher.isConsumed() && newVoucher.isConsumed()) {
                     if (newVoucher.getConsumedDateTime() != null) {
