@@ -1,7 +1,5 @@
 package it.unimib.sd2025.models;
 
-import java.time.LocalDateTime;
-
 public class Voucher {
     private int id;
     private String type;

@@ -37,12 +37,9 @@ public class User {
     }
 
     public void setEmail(String email) {
+        // TODO add check of email structure
         if (email == null || email == "") {
             throw new RuntimeException("User email cannot be null or empty");
-        }
-        // I check if the email follows the regex of the mail format
-        if (false) {  // FIXME reintroduce check email
-            throw new RuntimeException("User email doesn't follow the standard");            
         }
         this.email = email;
     }

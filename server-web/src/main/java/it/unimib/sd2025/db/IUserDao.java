@@ -1,6 +1,5 @@
 package it.unimib.sd2025.db;
 
-import java.util.List;
 import java.util.Map;
 
 import it.unimib.sd2025.models.User;

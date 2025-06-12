@@ -6,11 +6,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.lang.reflect.Array;
 import java.net.Socket;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Arrays;
@@ -32,20 +28,12 @@ public class UserDaoTcp implements IUserDao {
         Map<String, User> users = new HashMap<String, User>();
 
         for (String fiscalCode : fiscalCodes) {
-            // FIXME sucks
-            if (fiscalCode.equals("OK") || fiscalCode.equals("")) {
-                continue;
-            }
-
-            // FIXME remove this try-catch
+            System.out.println(fiscalCode);
             String userName = getUserProperty(fiscalCode, "name");
             String userSurname = getUserProperty(fiscalCode, "surname");
             String userEmail = getUserProperty(fiscalCode, "email");
             String userBalanceRaw = getUserProperty(fiscalCode, "balance");
             List<Voucher> userVouchers = getUserVouchers(fiscalCode);
-
-            // System.out.println(String.format("[DEBUG] Fetched user with\nname: %s\nsurname: %s\nemail: %s\nbalance: %s\nvouchers:" + userVouchers, 
-            //                                 userName, userSurname, userEmail, userBalanceRaw));
 
             User user = new User();
             user.setFiscalCode(fiscalCode);
@@ -69,11 +57,13 @@ public class UserDaoTcp implements IUserDao {
      * @return
      */
     public List<String> getFiscalCodes() {
-        String rawFiscalCodes = executeCommand("GETL fiscalCodes");
-        
-        String[] fiscalCodes = rawFiscalCodes.split(" ");
+        String rawFiscalCodes = executeDBCommand("GETL fiscalCodes");
+        String[] fiscalCodesWithOk = rawFiscalCodes.split(" ");
 
-        return new ArrayList<>(Arrays.asList(fiscalCodes));
+        // I remove the first item because the response is OK + fiscal codes
+        String[] fiscalCodes = Arrays.copyOfRange(fiscalCodesWithOk, 1, fiscalCodesWithOk.length);
+
+        return new ArrayList<String>(Arrays.asList(fiscalCodes));
     }
 
     /**
@@ -84,9 +74,9 @@ public class UserDaoTcp implements IUserDao {
      * @return
      */
     public String getUserProperty(String fiscalCode, String property) {
-        String serverResponse = executeCommand(String.format("GET %s.%s", fiscalCode, property));
+        String serverResponse = executeDBCommand(String.format("GET %s.%s", fiscalCode, property));
         if (serverResponse.equals("OK ")) {
-            return null;            
+            return null;
         }
         return serverResponse.split(" ")[1];
     }
@@ -101,15 +91,11 @@ public class UserDaoTcp implements IUserDao {
     public List<Voucher> getUserVouchers(String fiscalCode) {
         List<Voucher> vouchers = new ArrayList<Voucher>();
 
-        String vouchersIdsRaw = executeCommand(String.format("GETL %s.vouchersIds", fiscalCode));
-        String[] vouchersIds = vouchersIdsRaw.split(" ");
+        String vouchersIdsRaw = executeDBCommand(String.format("GETL %s.vouchersIds", fiscalCode));
+        String[] vouchersIdsWithOk = vouchersIdsRaw.split(" ");
+        String[] vouchersIds = Arrays.copyOfRange(vouchersIdsWithOk, 1, vouchersIdsWithOk.length);
 
         for (String voucherIdRaw : vouchersIds) {
-            // FIXME sucks
-            if (voucherIdRaw.equals("OK")) {
-                continue;
-            }
-
             int voucherId = Integer.parseInt(voucherIdRaw);
 
             String voucherValueRaw = getVoucherProperty(fiscalCode, voucherId, "value");
@@ -118,6 +104,7 @@ public class UserDaoTcp implements IUserDao {
             String voucherCreatedDateTime = getVoucherProperty(fiscalCode, voucherId, "createdDateTime");
             String voucherConsumedDateTime = getVoucherProperty(fiscalCode, voucherId, "consumedDateTime");
 
+            // FIXME how to check inconsistencies?
             if (voucherValueRaw == null || voucherConsumedRaw == null || voucherType == null || voucherCreatedDateTime == null) {
                 System.out.println(String.format("[DEBUG] DB inconsistency: missing data for voucher %d of the user %s", 
                                                  voucherId, fiscalCode));
@@ -149,7 +136,7 @@ public class UserDaoTcp implements IUserDao {
      * @return
      */
     public String getVoucherProperty(String fiscalCode, int voucherId, String property) {
-        String serverResponse = executeCommand(String.format("GET %s.voucher%d.%s", fiscalCode, voucherId, property));
+        String serverResponse = executeDBCommand(String.format("GET %s.voucher%d.%s", fiscalCode, voucherId, property));
         if (serverResponse.equals("OK ")) {
             return null;            
         }
@@ -157,19 +144,11 @@ public class UserDaoTcp implements IUserDao {
     }
 
     public void addUser(User user) {
-        List<String> fiscalCodes = getFiscalCodes();
-
-        try {
-            fiscalCodes.add(user.getFiscalCode());
-            executeCommand("SETL fiscalCodes " + String.join(" ", fiscalCodes));
-            
-            executeCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "name", user.getName()));
-            executeCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "surname", user.getSurname()));
-            executeCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "email", user.getEmail()));
-            executeCommand(String.format("SET %s.%s %f", user.getFiscalCode(), "balance", user.getBalance()));
-        } catch (Exception e) {
-            System.out.println("[DEBUG] Exception: " + e.getClass() + "(" + e.getMessage() + ")");
-        }
+        executeDBCommand(String.format("ADDL fiscalCodes %s", user.getFiscalCode()));
+        executeDBCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "name", user.getName()));
+        executeDBCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "surname", user.getSurname()));
+        executeDBCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "email", user.getEmail()));
+        executeDBCommand(String.format("SET %s.%s %f", user.getFiscalCode(), "balance", user.getBalance()));
     }
 
     /**
@@ -194,36 +173,27 @@ public class UserDaoTcp implements IUserDao {
      * @return
      */
     public void setUserProperty(String fiscalCode, String property, String value) {
-        executeCommand(String.format("SET %s.%s %s", fiscalCode, property, value));
+        executeDBCommand(String.format("SET %s.%s %s", fiscalCode, property, value));
     }
 
     public void addVoucherToUser(Voucher voucher, User user) {
         // First I add the new voucher ID to the voucherIds list of the user
-        
-        List<String> vouchersIds = new ArrayList<String>();
-
-        for (Voucher v : user.getVouchers()) {
-            vouchersIds.add(String.valueOf(v.getId()));
-        }
-
-        vouchersIds.add(String.valueOf(voucher.getId()));
-
-        executeCommand(String.format("SETL %s.vouchersIds %s", user.getFiscalCode(), String.join(" ", vouchersIds)));
+        executeDBCommand(String.format("ADDL %s.vouchersIds %d", user.getFiscalCode(), voucher.getId()));
 
         // Then I save the voucher data in the DB
-        executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "type", voucher.getType()));
-        executeCommand(String.format("SET %s.voucher%d.%s %f", user.getFiscalCode(), voucher.getId(), "value", voucher.getValue()));
-        executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "consumed", voucher.isConsumed()));
-        executeCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "createdDateTime", voucher.getCreatedDateTime()));
+        executeDBCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "type", voucher.getType()));
+        executeDBCommand(String.format("SET %s.voucher%d.%s %f", user.getFiscalCode(), voucher.getId(), "value", voucher.getValue()));
+        executeDBCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "consumed", voucher.isConsumed()));
+        executeDBCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "createdDateTime", voucher.getCreatedDateTime()));
     }
 
     public void modifyUserVoucher(Voucher voucher, User user) {
         String fiscalCode = user.getFiscalCode();
         int voucherId = voucher.getId();
-        executeCommand(String.format("SET %s.voucher%d.type %s", fiscalCode, voucherId, voucher.getType()));
-        executeCommand(String.format("SET %s.voucher%d.value %f", fiscalCode, voucherId, voucher.getValue()));
-        executeCommand(String.format("SET %s.voucher%d.consumed %b", fiscalCode, voucherId, voucher.isConsumed()));
-        executeCommand(String.format("SET %s.voucher%d.consumedDateTime %s", fiscalCode, voucherId, voucher.getConsumedDateTime()));
+        executeDBCommand(String.format("SET %s.voucher%d.type %s", fiscalCode, voucherId, voucher.getType()));
+        executeDBCommand(String.format("SET %s.voucher%d.value %f", fiscalCode, voucherId, voucher.getValue()));
+        executeDBCommand(String.format("SET %s.voucher%d.consumed %b", fiscalCode, voucherId, voucher.isConsumed()));
+        executeDBCommand(String.format("SET %s.voucher%d.consumedDateTime %s", fiscalCode, voucherId, voucher.getConsumedDateTime()));
     }
 
     public void deleteUserVoucher(Voucher voucher, User user) {
@@ -234,13 +204,15 @@ public class UserDaoTcp implements IUserDao {
         String deleteTypeCommand = String.format("CLEAR %s.voucher%d.type", fiscalCode, voucherId);
         String deleteValueCommand = String.format("CLEAR %s.voucher%d.value", fiscalCode, voucherId);
         String deleteConsumedCommand = String.format("CLEAR %s.voucher%d.consumed", fiscalCode, voucherId);
+        String deleteCreatedDateTimeCommand = String.format("CLEAR %s.voucher%d.createdDateTime", fiscalCode, voucherId);
+        String deleteConsumedDateTimeCommand = String.format("CLEAR %s.voucher%d.consumedDateTime", fiscalCode, voucherId);
 
-        // TODO delete other fields when implemented
-
-        executeCommand(deleteIdCommand);
-        executeCommand(deleteTypeCommand);
-        executeCommand(deleteValueCommand);
-        executeCommand(deleteConsumedCommand);
+        executeDBCommand(deleteIdCommand);
+        executeDBCommand(deleteTypeCommand);
+        executeDBCommand(deleteValueCommand);
+        executeDBCommand(deleteConsumedCommand);
+        executeDBCommand(deleteCreatedDateTimeCommand);
+        executeDBCommand(deleteConsumedDateTimeCommand);
     }
 
     /**
@@ -249,7 +221,7 @@ public class UserDaoTcp implements IUserDao {
      * @param command
      * @return
      */
-    public String executeCommand(String command) {
+    public String executeDBCommand(String command) {
         String response = null;
         
         try (Socket socket = new Socket(address, port)) {

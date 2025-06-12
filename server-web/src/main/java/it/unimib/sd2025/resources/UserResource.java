@@ -1,23 +1,17 @@
 package it.unimib.sd2025.resources;
 
-import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import javax.print.attribute.standard.Media;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import it.unimib.sd2025.models.User;
 import it.unimib.sd2025.models.Voucher;
 import it.unimib.sd2025.db.IUserDao;
 import it.unimib.sd2025.db.UserDaoTcp;
 
-import jakarta.json.JsonException;
-import jakarta.json.bind.JsonbBuilder;
-import jakarta.json.bind.JsonbException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -28,7 +22,6 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.Response.Status;
 
 /**
  * Rappresenta la risorsa "example" in "http://localhost:8080/example".
@@ -36,27 +29,40 @@ import jakarta.ws.rs.core.Response.Status;
 @Path("users")
 public class UserResource {
     private IUserDao userDao = new UserDaoTcp("localhost", 3030);
-    // private static Map<String, User> users = new HashMap<String, User>();
     private static final float START_BALANCE = 500;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getUsers() {
-        return Response.ok(userDao.getUsers()).build();
+        lock.readLock().lock();
+        try {
+            Map<String, User> users = userDao.getUsers();
+            return Response.ok(users).build();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public Response addUser(User user) {
         // First I check that the user's attributes are valid for the request
-        if (user == null || !areValuesOk(user) || !isFiscalCodeUnique(user.getFiscalCode())) {
+        if (user == null || !areUserAttributesNotNull(user)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
         user.setBalance(START_BALANCE);
 
-        synchronized(userDao) {
+        lock.writeLock().lock();
+        try {
+            // If the given user has a not valid fiscal code, 
+            if (!isFiscalCodeUnique(user.getFiscalCode())) {
+                return Response.status(Response.Status.BAD_REQUEST).build();
+            }
             userDao.addUser(user);
+        } finally {
+            lock.writeLock().unlock();
         }
 
         try {
@@ -68,12 +74,12 @@ public class UserResource {
     }
 
     /**
-     * Returns if the object attributes are not null
+     * Returns true if the object attributes are not null
      * 
      * @param user
      * @return true if the users attributes are not null
      */
-    private boolean areValuesOk(User user) {
+    private boolean areUserAttributesNotNull(User user) {
         ArrayList<String> valuesToCheck = new ArrayList<String>();
         valuesToCheck.add(user.getFiscalCode());
         valuesToCheck.add(user.getName());
@@ -89,6 +95,12 @@ public class UserResource {
         return true;
     }
 
+    /**
+     * Returns true if the given fiscal code hasn't already been used in the DB
+     * 
+     * @param fiscalCode
+     * @return bool
+     */
     public boolean isFiscalCodeUnique(String fiscalCode) {
         for (String fiscalCodeKey : userDao.getUsers().keySet()) {
             if (fiscalCodeKey.equals(fiscalCode)) {
@@ -104,8 +116,11 @@ public class UserResource {
     public Response getUserByFiscalCode(@PathParam("fiscalCode") String fiscalCode) {
         User user = null;
 
-        synchronized (userDao) {
+        lock.readLock().lock();
+        try {
             user = findUserByFiscalCode(fiscalCode);
+        } finally {
+            lock.readLock().unlock();
         }
 
         if (user != null) {
@@ -119,39 +134,23 @@ public class UserResource {
     @PUT
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response modifyUserByFiscalCode(@PathParam("fiscalCode") String fiscalCode, String rawUser) {
-        User userToModify = null;
-        
-        synchronized (userDao) {
-            for (User user : userDao.getUsers().values()) {
-                if (user.getFiscalCode().equals(fiscalCode)) {
-                    userToModify = user;
-                }
-            }
-        }
+    public Response modifyUserByFiscalCode(@PathParam("fiscalCode") String fiscalCode, User user) {
+        User userToModify = findUserByFiscalCode(fiscalCode);
 
         if (userToModify == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        var jsonBuilder = JsonbBuilder.create();
-        try {
-            var user = jsonBuilder.fromJson(rawUser, User.class);
-            synchronized(userToModify) {
-                userToModify.setName(user.getName());
-                userToModify.setSurname(user.getSurname());
-                userToModify.setEmail(user.getEmail());
-            }
+        userToModify.setName(user.getName());
+        userToModify.setSurname(user.getSurname());
+        userToModify.setEmail(user.getEmail());
 
-            // Then I change the user attributes in the DB
-            synchronized (userDao) {
-                userDao.modifyUser(userToModify);
-            }
-
-            return Response.ok(userToModify).build();
-        } catch (JsonbException e) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+        // Then I change the user attributes in the DB
+        synchronized (userDao) {
+            userDao.modifyUser(userToModify);
         }
+
+        return Response.ok(userToModify).build();
     }
 
     @GET
@@ -177,7 +176,7 @@ public class UserResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response addUserVoucher(@PathParam("fiscalCode") String fiscalCode, Voucher voucher) {
         // First I check if the voucher is valid
-        if (!isVoucherValid(voucher)) {
+        if (!areVoucherAttributesNotNull(voucher)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
@@ -243,97 +242,107 @@ public class UserResource {
     public Response modifyUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId, Voucher newVoucher) {
         User user;
 
-        synchronized (userDao) {
+        lock.writeLock().lock();
+        try {
             user = findUserByFiscalCode(fiscalCode);
-        }
 
-        if (user != null) {
-            Voucher originalVoucher;
-            synchronized (userDao) {
+            if (user != null) {
+                Voucher originalVoucher;
                 originalVoucher = findUserVoucherById(user, voucherId);
-            }
 
-            if (!isModifyVoucherValid(originalVoucher, newVoucher, user)) {
-                return Response.status(Response.Status.BAD_REQUEST).build();
-            }
+                if (!isModifyVoucherValid(originalVoucher, newVoucher, user)) {
+                    return Response.status(Response.Status.BAD_REQUEST).build();
+                }
 
-            if (originalVoucher != null) {
-                boolean newValueIsInValidRange = (newVoucher.getValue() > 0 && newVoucher.getValue() <= user.getBalance());
+                if (originalVoucher != null) {
+                    boolean voucherValueHasChanged = newVoucher.getValue() != originalVoucher.getValue();
 
-                if (newVoucher.getValue() != originalVoucher.getValue()) {
-                    if (!originalVoucher.isConsumed() && newValueIsInValidRange) {
-                        originalVoucher.setValue(newVoucher.getValue());
-    
-                        // After changing the value, I calculate the new balance of the user
-                        user.setBalance(START_BALANCE);
-                        for (Voucher v : user.getVouchers()) {
-                            user.setBalance(user.getBalance() - v.getValue());
+                    if (voucherValueHasChanged) {
+                        boolean newValueIsInValidRange = (newVoucher.getValue() > 0 && newVoucher.getValue() <= user.getBalance());
+                        if (!originalVoucher.isConsumed() && newValueIsInValidRange) {
+                            originalVoucher.setValue(newVoucher.getValue());
+        
+                            // After changing the value, I calculate the new balance of the user
+                            user.setBalance(START_BALANCE);
+                            for (Voucher v : user.getVouchers()) {
+                                user.setBalance(user.getBalance() - v.getValue());
+                            }
+
                             userDao.modifyUser(user);
+                        } else {
+                            return Response.status(Response.Status.BAD_REQUEST).build();
                         }
-                    } else {
-                        return Response.status(Response.Status.BAD_REQUEST).build();
                     }
-                }
 
-                if (!originalVoucher.getType().equals(newVoucher.getType())) {
-                    if (!originalVoucher.isConsumed()) {
-                        originalVoucher.setType(newVoucher.getType());
-                    } else {
-                        return Response.status(Response.Status.BAD_REQUEST).build();
+                    if (!originalVoucher.getType().equals(newVoucher.getType())) {
+                        if (!originalVoucher.isConsumed()) {
+                            originalVoucher.setType(newVoucher.getType());
+                        } else {
+                            return Response.status(Response.Status.BAD_REQUEST).build();
+                        }
                     }
-                }
-                
-                if (!originalVoucher.isConsumed() && newVoucher.isConsumed()) {
-                    if (newVoucher.getConsumedDateTime() != null) {
-                        originalVoucher.setConsumed(newVoucher.isConsumed());
-                        originalVoucher.setConsumedDateTime(newVoucher.getConsumedDateTime());
-                    } else {
-                        return Response.status(Response.Status.BAD_REQUEST).build();
+                    
+                    if (!originalVoucher.isConsumed() && newVoucher.isConsumed()) {
+                        if (newVoucher.getConsumedDateTime() != null) {
+                            originalVoucher.setConsumed(newVoucher.isConsumed());
+                            originalVoucher.setConsumedDateTime(newVoucher.getConsumedDateTime());
+                        } else {
+                            return Response.status(Response.Status.BAD_REQUEST).build();
+                        }
                     }
+
+                    userDao.modifyUserVoucher(originalVoucher, user);
+
+                    return Response.ok(originalVoucher).build();
+                } else {
+                    return Response.status(Response.Status.NOT_FOUND).build();
                 }
-
-                userDao.modifyUserVoucher(originalVoucher, user);
-
-                return Response.ok(originalVoucher).build();
             } else {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-        } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
     @DELETE
     @Path("/{fiscalCode}/vouchers/{voucherId}")
     public Response removeUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId) {
-        User user;
-
-        synchronized (userDao) {
-            user = findUserByFiscalCode(fiscalCode);
-        }
-
-        if (user != null) {
-            Voucher voucher;
-            synchronized (userDao) {
-                voucher = findUserVoucherById(user, voucherId);
-            }
-            if (voucher != null) {
-                if (!voucher.isConsumed()) {
-                    synchronized (userDao) {
-                        userDao.deleteUserVoucher(voucher, user);
-                        return Response.ok().build();
+        lock.writeLock().lock();
+        try {
+            User user = findUserByFiscalCode(fiscalCode);
+        
+            if (user != null) {
+                Voucher voucher;
+                synchronized (userDao) {
+                    voucher = findUserVoucherById(user, voucherId);
+                }
+                if (voucher != null) {
+                    if (!voucher.isConsumed()) {
+                        synchronized (userDao) {
+                            userDao.deleteUserVoucher(voucher, user);
+                            return Response.ok().build();
+                        }
+                    } else {
+                        return Response.status(Response.Status.BAD_REQUEST).build();
                     }
                 } else {
-                    return Response.status(Response.Status.BAD_REQUEST).build();
+                    return Response.status(Response.Status.NOT_FOUND).build();
                 }
             } else {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
-        } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
+    /**
+     * Returns the user that has the given fiscal code in the DB
+     * 
+     * @param fiscalCode
+     * @return User
+     */
     private User findUserByFiscalCode(String fiscalCode) {
         for (User user : userDao.getUsers().values()) {
             if (user.getFiscalCode().equals(fiscalCode)) {
@@ -343,6 +352,13 @@ public class UserResource {
         return null;
     }
 
+    /**
+     * Returns the voucher of a specific user that has a specific ID
+     * 
+     * @param user
+     * @param voucherId
+     * @return Voucher
+     */
     private Voucher findUserVoucherById(User user, int voucherId) {
         for (Voucher voucher : user.getVouchers()) {
             if (voucher.getId() == voucherId) {
@@ -352,7 +368,13 @@ public class UserResource {
         return null;
     }
 
-    private boolean isVoucherValid(Voucher voucher) {
+    /**
+     * Returns true if the voucher attributes are legit, so not null
+     * 
+     * @param voucher
+     * @return boolean
+     */
+    private boolean areVoucherAttributesNotNull(Voucher voucher) {
         if (voucher.getType() == null) {
             return false;
         }
@@ -366,6 +388,14 @@ public class UserResource {
         return true;
     }
 
+    /**
+     * Returns true if the new voucher has some changes that can be done correctly on the old one
+     * 
+     * @param originalVoucher
+     * @param newVoucher
+     * @param user
+     * @return boolean
+     */
     boolean isModifyVoucherValid(Voucher originalVoucher, Voucher newVoucher, User user) {
         boolean wantsToBecomeUnconsumed = (originalVoucher.isConsumed() && !newVoucher.isConsumed());
         boolean createdDateHasChanged = !newVoucher.getCreatedDateTime().equals(originalVoucher.getCreatedDateTime());
