@@ -1,5 +1,4 @@
 package it.unimib.sd2025.db;
-
 import it.unimib.sd2025.models.*;
 
 import java.io.BufferedReader;
@@ -16,6 +15,8 @@ import java.util.Map;
 public class UserDaoTcp implements IUserDao {
     private String address;
     private int port;
+
+    private final char SPACE_DELIMITER = '~';
     
     public UserDaoTcp(String address, int port) {
         this.address = address;
@@ -28,7 +29,6 @@ public class UserDaoTcp implements IUserDao {
         Map<String, User> users = new HashMap<String, User>();
 
         for (String fiscalCode : fiscalCodes) {
-            System.out.println(fiscalCode);
             String userName = getUserProperty(fiscalCode, "name");
             String userSurname = getUserProperty(fiscalCode, "surname");
             String userEmail = getUserProperty(fiscalCode, "email");
@@ -74,11 +74,15 @@ public class UserDaoTcp implements IUserDao {
      * @return
      */
     public String getUserProperty(String fiscalCode, String property) {
-        String serverResponse = executeDBCommand(String.format("GET %s.%s", fiscalCode, property));
-        if (serverResponse.equals("OK ")) {
+        String serverResponseWithOk = executeDBCommand(String.format("GET %s.%s", fiscalCode, property));
+        if (serverResponseWithOk.equals("OK ")) {
             return null;
         }
-        return serverResponse.split(" ")[1];
+        String serverResponseWithoutSpaces = serverResponseWithOk.split(" ")[1];
+
+        // Before returning the response, I replace every space delimiter with a space character
+        String serverResponse = serverResponseWithoutSpaces.replace(SPACE_DELIMITER, ' ');
+        return serverResponse;
     }
 
     /**
@@ -128,7 +132,7 @@ public class UserDaoTcp implements IUserDao {
         return vouchers;
     }
 
-        /**
+    /**
      * Returns the property of the user that has the given fiscalCode, saved in the DB
      * 
      * @param fiscalCode
@@ -140,7 +144,25 @@ public class UserDaoTcp implements IUserDao {
         if (serverResponse.equals("OK ")) {
             return null;            
         }
-        return serverResponse.split(" ")[1];
+
+        // Before returning the property, I replace each special character with the space
+        String serverResponseWithoutSpaces = serverResponse.split(" ")[1];
+        String serverResponseWithSpaces = serverResponseWithoutSpaces.replace(SPACE_DELIMITER, ' ');
+        return serverResponseWithSpaces;
+    }
+
+    /**
+     * Sets the voucher property with the given data in the DB
+     * 
+     * @param fiscalCode
+     * @param voucherId
+     * @param property
+     */
+    public void setVoucherProperty(String fiscalCode, int voucherId, String property, String value) {
+        // Before running the command, I convert each space with the special character
+        String valueWithoutSpaces = value.replace(' ', SPACE_DELIMITER);
+
+        executeDBCommand(String.format("SET %s.voucher%d.%s %s", fiscalCode, voucherId, property, valueWithoutSpaces));
     }
 
     public void addUser(User user) {
@@ -173,6 +195,10 @@ public class UserDaoTcp implements IUserDao {
      * @return
      */
     public void setUserProperty(String fiscalCode, String property, String value) {
+        // Before running the command, I have to replace spaces with a special character because
+        if (value.contains(" ")) {
+            value.replace(' ', SPACE_DELIMITER);
+        }
         executeDBCommand(String.format("SET %s.%s %s", fiscalCode, property, value));
     }
 
@@ -181,19 +207,22 @@ public class UserDaoTcp implements IUserDao {
         executeDBCommand(String.format("ADDL %s.vouchersIds %d", user.getFiscalCode(), voucher.getId()));
 
         // Then I save the voucher data in the DB
-        executeDBCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "type", voucher.getType()));
-        executeDBCommand(String.format("SET %s.voucher%d.%s %f", user.getFiscalCode(), voucher.getId(), "value", voucher.getValue()));
-        executeDBCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "consumed", voucher.isConsumed()));
-        executeDBCommand(String.format("SET %s.voucher%d.%s %s", user.getFiscalCode(), voucher.getId(), "createdDateTime", voucher.getCreatedDateTime()));
+        String fiscalCode = user.getFiscalCode();
+        int voucherId = voucher.getId();
+        setVoucherProperty(fiscalCode, voucherId, "type", voucher.getType());
+        setVoucherProperty(fiscalCode, voucherId, "value", String.valueOf(voucher.getValue()));
+        setVoucherProperty(fiscalCode, voucherId, "consumed", Boolean.toString(voucher.isConsumed()));
+        setVoucherProperty(fiscalCode, voucherId, "createdDateTime", voucher.getCreatedDateTime());
     }
 
     public void modifyUserVoucher(Voucher voucher, User user) {
         String fiscalCode = user.getFiscalCode();
         int voucherId = voucher.getId();
-        executeDBCommand(String.format("SET %s.voucher%d.type %s", fiscalCode, voucherId, voucher.getType()));
-        executeDBCommand(String.format("SET %s.voucher%d.value %f", fiscalCode, voucherId, voucher.getValue()));
-        executeDBCommand(String.format("SET %s.voucher%d.consumed %b", fiscalCode, voucherId, voucher.isConsumed()));
-        executeDBCommand(String.format("SET %s.voucher%d.consumedDateTime %s", fiscalCode, voucherId, voucher.getConsumedDateTime()));
+        setVoucherProperty(fiscalCode, voucherId, "type", voucher.getType());
+        setVoucherProperty(fiscalCode, voucherId, "value", String.valueOf(voucher.getValue()));
+        setVoucherProperty(fiscalCode, voucherId, "consumed", Boolean.toString(voucher.isConsumed()));
+        setVoucherProperty(fiscalCode, voucherId, "createdDateTime", voucher.getCreatedDateTime());
+        setVoucherProperty(fiscalCode, voucherId, "consumedDateTime", voucher.getConsumedDateTime());
     }
 
     public void deleteUserVoucher(Voucher voucher, User user) {
@@ -233,7 +262,6 @@ public class UserDaoTcp implements IUserDao {
             String temp;
             while ((temp = socketInputStream.readLine()) != null) {
                 response = temp;
-                // System.out.println(String.format("[DEBUG] Server response to [%s]: %s", command, response));
             }
         } catch (IOException exception) {
             exception.printStackTrace();

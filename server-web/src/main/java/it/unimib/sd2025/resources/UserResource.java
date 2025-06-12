@@ -24,7 +24,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 /**
- * Rappresenta la risorsa "example" in "http://localhost:8080/example".
+ * Rappresenta la risorsa "User" in "http://localhost:8080/users".
  */
 @Path("users")
 public class UserResource {
@@ -398,8 +398,8 @@ public class UserResource {
      */
     boolean isModifyVoucherValid(Voucher originalVoucher, Voucher newVoucher, User user) {
         boolean wantsToBecomeUnconsumed = (originalVoucher.isConsumed() && !newVoucher.isConsumed());
-        boolean createdDateHasChanged = !newVoucher.getCreatedDateTime().equals(originalVoucher.getCreatedDateTime());
-        boolean consumedDateHasChanged = (originalVoucher.getConsumedDateTime() != null && !newVoucher.getConsumedDateTime().equals(originalVoucher.getConsumedDateTime()));
+        boolean createdDateHasChanged = (originalVoucher.getCreatedDateTime() != null && newVoucher.getCreatedDateTime() != null && !newVoucher.getCreatedDateTime().equals(originalVoucher.getCreatedDateTime()));
+        boolean consumedDateHasChanged = (originalVoucher.getConsumedDateTime() != null && newVoucher.getConsumedDateTime() != null && !newVoucher.getConsumedDateTime().equals(originalVoucher.getConsumedDateTime()));
 
         // The voucher cannot become unconsumed if it is consumed
         if (originalVoucher.isConsumed() && wantsToBecomeUnconsumed) {
