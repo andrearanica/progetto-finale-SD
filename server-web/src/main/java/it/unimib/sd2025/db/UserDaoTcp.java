@@ -29,10 +29,10 @@ public class UserDaoTcp implements IUserDao {
         Map<String, User> users = new HashMap<String, User>();
 
         for (String fiscalCode : fiscalCodes) {
-            String userName = getUserProperty(fiscalCode, "name");
-            String userSurname = getUserProperty(fiscalCode, "surname");
-            String userEmail = getUserProperty(fiscalCode, "email");
-            String userBalanceRaw = getUserProperty(fiscalCode, "balance");
+            String userName = getUserPropertyFromDB(fiscalCode, "name");
+            String userSurname = getUserPropertyFromDB(fiscalCode, "surname");
+            String userEmail = getUserPropertyFromDB(fiscalCode, "email");
+            String userBalanceRaw = getUserPropertyFromDB(fiscalCode, "balance");
             List<Voucher> userVouchers = getUserVouchers(fiscalCode);
 
             User user = new User();
@@ -73,7 +73,7 @@ public class UserDaoTcp implements IUserDao {
      * @param property, the key of the value in the DB
      * @return
      */
-    public String getUserProperty(String fiscalCode, String property) {
+    public String getUserPropertyFromDB(String fiscalCode, String property) {
         String serverResponseWithOk = executeDBCommand(String.format("GET %s.%s", fiscalCode, property));
         if (serverResponseWithOk.equals("OK ")) {
             return null;
@@ -102,18 +102,11 @@ public class UserDaoTcp implements IUserDao {
         for (String voucherIdRaw : vouchersIds) {
             int voucherId = Integer.parseInt(voucherIdRaw);
 
-            String voucherValueRaw = getVoucherProperty(fiscalCode, voucherId, "value");
-            String voucherConsumedRaw = getVoucherProperty(fiscalCode, voucherId, "consumed");
-            String voucherType = getVoucherProperty(fiscalCode, voucherId, "type");
-            String voucherCreatedDateTime = getVoucherProperty(fiscalCode, voucherId, "createdDateTime");
-            String voucherConsumedDateTime = getVoucherProperty(fiscalCode, voucherId, "consumedDateTime");
-
-            // FIXME how to check inconsistencies?
-            if (voucherValueRaw == null || voucherConsumedRaw == null || voucherType == null || voucherCreatedDateTime == null) {
-                System.out.println(String.format("[DEBUG] DB inconsistency: missing data for voucher %d of the user %s", 
-                                                 voucherId, fiscalCode));
-                continue;
-            }
+            String voucherValueRaw = getVoucherPropertyFromDB(fiscalCode, voucherId, "value");
+            String voucherConsumedRaw = getVoucherPropertyFromDB(fiscalCode, voucherId, "consumed");
+            String voucherType = getVoucherPropertyFromDB(fiscalCode, voucherId, "type");
+            String voucherCreatedDateTime = getVoucherPropertyFromDB(fiscalCode, voucherId, "createdDateTime");
+            String voucherConsumedDateTime = getVoucherPropertyFromDB(fiscalCode, voucherId, "consumedDateTime");
 
             Voucher voucher = new Voucher();
             voucher.setId(voucherId);
@@ -139,7 +132,7 @@ public class UserDaoTcp implements IUserDao {
      * @param property, the key of the value in the DB
      * @return
      */
-    public String getVoucherProperty(String fiscalCode, int voucherId, String property) {
+    public String getVoucherPropertyFromDB(String fiscalCode, int voucherId, String property) {
         String serverResponse = executeDBCommand(String.format("GET %s.voucher%d.%s", fiscalCode, voucherId, property));
         if (serverResponse.equals("OK ")) {
             return null;            
@@ -158,7 +151,7 @@ public class UserDaoTcp implements IUserDao {
      * @param voucherId
      * @param property
      */
-    public void setVoucherProperty(String fiscalCode, int voucherId, String property, String value) {
+    public void saveVoucherPropertyInDB(String fiscalCode, int voucherId, String property, String value) {
         // Before running the command, I convert each space with the special character
         String valueWithoutSpaces = value.replace(' ', SPACE_DELIMITER);
 
@@ -181,10 +174,10 @@ public class UserDaoTcp implements IUserDao {
      * @return boolean
      */
     public void modifyUser(User user) {
-        setUserProperty(user.getFiscalCode(), "name", user.getName());
-        setUserProperty(user.getFiscalCode(), "surname", user.getSurname());
-        setUserProperty(user.getFiscalCode(), "email", user.getEmail());
-        setUserProperty(user.getFiscalCode(), "balance", ""+user.getBalance());
+        saveUserPropertyInDB(user.getFiscalCode(), "name", user.getName());
+        saveUserPropertyInDB(user.getFiscalCode(), "surname", user.getSurname());
+        saveUserPropertyInDB(user.getFiscalCode(), "email", user.getEmail());
+        saveUserPropertyInDB(user.getFiscalCode(), "balance", ""+user.getBalance());
     }
 
     /**
@@ -194,7 +187,7 @@ public class UserDaoTcp implements IUserDao {
      * @param property, the key of the value in the DB
      * @return
      */
-    public void setUserProperty(String fiscalCode, String property, String value) {
+    public void saveUserPropertyInDB(String fiscalCode, String property, String value) {
         // Before running the command, I have to replace spaces with a special character because
         if (value.contains(" ")) {
             value.replace(' ', SPACE_DELIMITER);
@@ -209,20 +202,22 @@ public class UserDaoTcp implements IUserDao {
         // Then I save the voucher data in the DB
         String fiscalCode = user.getFiscalCode();
         int voucherId = voucher.getId();
-        setVoucherProperty(fiscalCode, voucherId, "type", voucher.getType());
-        setVoucherProperty(fiscalCode, voucherId, "value", String.valueOf(voucher.getValue()));
-        setVoucherProperty(fiscalCode, voucherId, "consumed", Boolean.toString(voucher.isConsumed()));
-        setVoucherProperty(fiscalCode, voucherId, "createdDateTime", voucher.getCreatedDateTime());
+        saveVoucherPropertyInDB(fiscalCode, voucherId, "type", voucher.getType());
+        saveVoucherPropertyInDB(fiscalCode, voucherId, "value", String.valueOf(voucher.getValue()));
+        saveVoucherPropertyInDB(fiscalCode, voucherId, "consumed", Boolean.toString(voucher.isConsumed()));
+        saveVoucherPropertyInDB(fiscalCode, voucherId, "createdDateTime", voucher.getCreatedDateTime());
     }
 
     public void modifyUserVoucher(Voucher voucher, User user) {
         String fiscalCode = user.getFiscalCode();
         int voucherId = voucher.getId();
-        setVoucherProperty(fiscalCode, voucherId, "type", voucher.getType());
-        setVoucherProperty(fiscalCode, voucherId, "value", String.valueOf(voucher.getValue()));
-        setVoucherProperty(fiscalCode, voucherId, "consumed", Boolean.toString(voucher.isConsumed()));
-        setVoucherProperty(fiscalCode, voucherId, "createdDateTime", voucher.getCreatedDateTime());
-        setVoucherProperty(fiscalCode, voucherId, "consumedDateTime", voucher.getConsumedDateTime());
+        saveVoucherPropertyInDB(fiscalCode, voucherId, "type", voucher.getType());
+        saveVoucherPropertyInDB(fiscalCode, voucherId, "value", String.valueOf(voucher.getValue()));
+        saveVoucherPropertyInDB(fiscalCode, voucherId, "consumed", Boolean.toString(voucher.isConsumed()));
+        saveVoucherPropertyInDB(fiscalCode, voucherId, "createdDateTime", voucher.getCreatedDateTime());
+        if (voucher.getConsumedDateTime() != null) {
+            saveVoucherPropertyInDB(fiscalCode, voucherId, "consumedDateTime", voucher.getConsumedDateTime());
+        }
     }
 
     public void deleteUserVoucher(Voucher voucher, User user) {

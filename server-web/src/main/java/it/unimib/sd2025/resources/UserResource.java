@@ -258,20 +258,7 @@ public class UserResource {
                     boolean voucherValueHasChanged = newVoucher.getValue() != originalVoucher.getValue();
 
                     if (voucherValueHasChanged) {
-                        boolean newValueIsInValidRange = (newVoucher.getValue() > 0 && newVoucher.getValue() <= user.getBalance());
-                        if (!originalVoucher.isConsumed() && newValueIsInValidRange) {
-                            originalVoucher.setValue(newVoucher.getValue());
-        
-                            // After changing the value, I calculate the new balance of the user
-                            user.setBalance(START_BALANCE);
-                            for (Voucher v : user.getVouchers()) {
-                                user.setBalance(user.getBalance() - v.getValue());
-                            }
-
-                            userDao.modifyUser(user);
-                        } else {
-                            return Response.status(Response.Status.BAD_REQUEST).build();
-                        }
+                        return Response.status(Response.Status.BAD_REQUEST).build();
                     }
 
                     if (!originalVoucher.getType().equals(newVoucher.getType())) {
