@@ -386,6 +386,11 @@ public class UserResource {
             return false;
         }
 
+        // If the new voucher has a consumed date but it's not consumed, it is not valid
+        if (!newVoucher.isConsumed() && newVoucher.getConsumedDateTime() != null) {
+            return false;
+        }
+
         return true;
     }
 }

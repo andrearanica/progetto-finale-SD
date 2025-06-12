@@ -223,6 +223,7 @@ public class UserDaoTcp implements IUserDao {
         executeCommand(String.format("SET %s.voucher%d.type %s", fiscalCode, voucherId, voucher.getType()));
         executeCommand(String.format("SET %s.voucher%d.value %f", fiscalCode, voucherId, voucher.getValue()));
         executeCommand(String.format("SET %s.voucher%d.consumed %b", fiscalCode, voucherId, voucher.isConsumed()));
+        executeCommand(String.format("SET %s.voucher%d.consumedDateTime %s", fiscalCode, voucherId, voucher.getConsumedDateTime()));
     }
 
     public void deleteUserVoucher(Voucher voucher, User user) {
