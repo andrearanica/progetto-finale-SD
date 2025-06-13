@@ -29,8 +29,10 @@ import jakarta.ws.rs.core.Response;
 @Path("users")
 public class UserResource {
     private IUserDao userDao = new UserDaoTcp("localhost", 3030);
-    private static final float START_BALANCE = 500;
+    private final float START_BALANCE = 500;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final String[] voucherTypes = {"cinema", "musica", "concerti", "eventi", "culturali", 
+                                           "libri", "musei", "strumenti musicali", "teatro", "danza"};
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -185,7 +187,7 @@ public class UserResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response addUserVoucher(@PathParam("fiscalCode") String fiscalCode, Voucher voucher) {
         // First I check if the voucher is valid
-        if (!areVoucherAttributesNotNull(voucher)) {
+        if (!areVoucherAttributesValid(voucher)) {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
 
@@ -231,7 +233,8 @@ public class UserResource {
 
     @GET
     @Path("/{fiscalCode}/vouchers/{voucherId}")
-    public Response getUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId) {
+    public Response getUserVoucherById(@PathParam("fiscalCode") String fiscalCode, 
+                                       @PathParam("voucherId") int voucherId) {
         User user;
 
         lock.readLock().lock();
@@ -263,7 +266,8 @@ public class UserResource {
     @PUT
     @Path("/{fiscalCode}/vouchers/{voucherId}")
     @Consumes(MediaType.APPLICATION_JSON)
-    public Response modifyUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId, Voucher newVoucher) {
+    public Response modifyUserVoucherById(@PathParam("fiscalCode") String fiscalCode, 
+                                          @PathParam("voucherId") int voucherId, Voucher newVoucher) {
         User user;
 
         lock.writeLock().lock();
@@ -318,7 +322,8 @@ public class UserResource {
 
     @DELETE
     @Path("/{fiscalCode}/vouchers/{voucherId}")
-    public Response removeUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId) {
+    public Response removeUserVoucherById(@PathParam("fiscalCode") String fiscalCode, 
+                                          @PathParam("voucherId") int voucherId) {
         lock.writeLock().lock();
         try {
             User user = findUserByFiscalCode(fiscalCode);
@@ -381,7 +386,7 @@ public class UserResource {
      * @param voucher
      * @return boolean
      */
-    private boolean areVoucherAttributesNotNull(Voucher voucher) {
+    private boolean areVoucherAttributesValid(Voucher voucher) {
         if (voucher.getType() == null) {
             return false;
         }
@@ -391,8 +396,16 @@ public class UserResource {
         if (voucher.getCreatedDateTime() == null) {
             return false;
         }
+        
+        // Finally I check if the given voucher type is in the valid ones
+        boolean isVoucherTypeValid = false;
+        for (String voucherType : voucherTypes) {
+            if (voucherType.toUpperCase().equals(voucher.getType().toUpperCase())) {
+                isVoucherTypeValid = true;
+            }
+        }
 
-        return true;
+        return isVoucherTypeValid;
     }
 
     /**
@@ -404,6 +417,7 @@ public class UserResource {
      * @return boolean
      */
     boolean isModifyVoucherValid(Voucher originalVoucher, Voucher newVoucher, User user) {
+        // FIXME pretty orrible
         boolean wantsToBecomeUnconsumed = (originalVoucher.isConsumed() && !newVoucher.isConsumed());
         boolean createdDateHasChanged = (originalVoucher.getCreatedDateTime() != null && newVoucher.getCreatedDateTime() != null && !newVoucher.getCreatedDateTime().equals(originalVoucher.getCreatedDateTime()));
         boolean consumedDateHasChanged = (originalVoucher.getConsumedDateTime() != null && newVoucher.getConsumedDateTime() != null && !newVoucher.getConsumedDateTime().equals(originalVoucher.getConsumedDateTime()));
