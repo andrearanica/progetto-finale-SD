@@ -135,19 +135,25 @@ public class UserResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response modifyUserByFiscalCode(@PathParam("fiscalCode") String fiscalCode, User user) {
-        User userToModify = findUserByFiscalCode(fiscalCode);
+        User userToModify = null;
+        
+        lock.writeLock().lock();
 
-        if (userToModify == null) {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        try {
+            userToModify = findUserByFiscalCode(fiscalCode);
 
-        userToModify.setName(user.getName());
-        userToModify.setSurname(user.getSurname());
-        userToModify.setEmail(user.getEmail());
-
-        // Then I change the user attributes in the DB
-        synchronized (userDao) {
+            if (userToModify == null) {
+                return Response.status(Response.Status.NOT_FOUND).build();
+            }
+    
+            userToModify.setName(user.getName());
+            userToModify.setSurname(user.getSurname());
+            userToModify.setEmail(user.getEmail());
+    
+            // Then I change the user attributes in the DB
             userDao.modifyUser(userToModify);
+        } finally {
+            lock.writeLock().unlock();
         }
 
         return Response.ok(userToModify).build();
@@ -159,8 +165,11 @@ public class UserResource {
     public Response getUserVouchers(@PathParam("fiscalCode") String fiscalCode) {
         User user;
 
-        synchronized(userDao) {
+        lock.readLock().lock();
+        try {
             user = findUserByFiscalCode(fiscalCode);
+        } finally {
+            lock.readLock().unlock();
         }
 
         if (user != null) {
@@ -182,26 +191,34 @@ public class UserResource {
 
         User user = null;
 
-        synchronized (userDao) {
+        lock.readLock().lock();
+        try {
             user = findUserByFiscalCode(fiscalCode);
+        } finally {
+            lock.readLock().unlock();
         }
 
         if (user != null) {
             // I check that the given voucher has a valid value
             if (voucher.getValue() > 0 && voucher.getValue() <= user.getBalance()) {
                 int maxVoucherId = -1;
-                for (Voucher v : user.getVouchers()) {
-                    if (v.getId() > maxVoucherId) {
-                        maxVoucherId = v.getId();
+                lock.writeLock().lock();
+                try {
+                    for (Voucher v : user.getVouchers()) {
+                        if (v.getId() > maxVoucherId) {
+                            maxVoucherId = v.getId();
+                        }
                     }
+    
+                    voucher.setId(maxVoucherId + 1);
+    
+                    user.setBalance(user.getBalance() - voucher.getValue());
+                    userDao.addVoucherToUser(voucher, user);
+                    
+                    userDao.modifyUser(user);
+                } finally {
+                    lock.writeLock().unlock();
                 }
-
-                voucher.setId(maxVoucherId + 1);
-
-                user.setBalance(user.getBalance() - voucher.getValue());
-                userDao.addVoucherToUser(voucher, user);
-                
-                userDao.modifyUser(user);
                 
                 return Response.ok(voucher).build();
             } else {
@@ -217,15 +234,22 @@ public class UserResource {
     public Response getUserVoucherById(@PathParam("fiscalCode") String fiscalCode, @PathParam("voucherId") int voucherId) {
         User user;
 
-        synchronized (userDao) {
+        lock.readLock().lock();
+        try {
             user = findUserByFiscalCode(fiscalCode);
+        } finally {
+            lock.readLock().unlock();
         }
 
         if (user != null) {
             Voucher voucher;
-            synchronized (userDao) {
+            lock.readLock().lock();
+            try {
                 voucher = findUserVoucherById(user, voucherId);
+            } finally {
+                lock.readLock().unlock();
             }
+
             if (voucher != null) {
                 return Response.ok(voucher).build();
             } else {
@@ -301,15 +325,11 @@ public class UserResource {
         
             if (user != null) {
                 Voucher voucher;
-                synchronized (userDao) {
-                    voucher = findUserVoucherById(user, voucherId);
-                }
+                voucher = findUserVoucherById(user, voucherId);
                 if (voucher != null) {
                     if (!voucher.isConsumed()) {
-                        synchronized (userDao) {
-                            userDao.deleteUserVoucher(voucher, user);
-                            return Response.ok().build();
-                        }
+                        userDao.deleteUserVoucher(voucher, user);
+                        return Response.ok().build();
                     } else {
                         return Response.status(Response.Status.BAD_REQUEST).build();
                     }
