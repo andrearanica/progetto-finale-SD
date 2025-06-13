@@ -2,10 +2,14 @@ package it.unimib.sd2025.resources;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import it.unimib.sd2025.models.User;
 import it.unimib.sd2025.models.Voucher;
@@ -50,8 +54,8 @@ public class UserResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response addUser(User user) {
         // First I check that the user's attributes are valid for the request
-        if (user == null || !areUserAttributesNotNull(user)) {
-            return getBadRequestResponse("user attributes cannot be 'null'");
+        if (user == null || !areUserAttributesValid(user)) {
+            return getBadRequestResponse("user attributes are not valid");
         }
 
         user.setBalance(START_BALANCE);
@@ -81,20 +85,23 @@ public class UserResource {
      * @param user
      * @return true if the users attributes are not null
      */
-    private boolean areUserAttributesNotNull(User user) {
+    private boolean areUserAttributesValid(User user) {
         ArrayList<String> valuesToCheck = new ArrayList<String>();
         valuesToCheck.add(user.getFiscalCode());
         valuesToCheck.add(user.getName());
         valuesToCheck.add(user.getSurname());
         valuesToCheck.add(user.getEmail());
-
+        
         for (String value : valuesToCheck) {
             if (value == null) {
                 return false;
             }
         }
 
-        return true;
+        Pattern pattern = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}");
+        Matcher mat = pattern.matcher(user.getEmail());
+
+        return mat.find();
     }
 
     /**
@@ -270,6 +277,10 @@ public class UserResource {
                                           @PathParam("voucherId") int voucherId, Voucher newVoucher) {
         User user;
 
+        if (!areVoucherAttributesValid(newVoucher)) {
+            return getBadRequestResponse("new voucher attributes are not valid");
+        }
+
         lock.writeLock().lock();
         try {
             user = findUserByFiscalCode(fiscalCode);
@@ -278,40 +289,38 @@ public class UserResource {
                 Voucher originalVoucher;
                 originalVoucher = findUserVoucherById(user, voucherId);
 
+                if (originalVoucher == null) {
+                    return Response.status(Response.Status.NOT_FOUND).build();
+                }
+
                 if (!isModifyVoucherValid(originalVoucher, newVoucher, user)) {
                     return getBadRequestResponse("new voucher values are not valid");
                 }
 
-                if (originalVoucher != null) {
-                    boolean voucherValueHasChanged = newVoucher.getValue() != originalVoucher.getValue();
-
-                    if (voucherValueHasChanged) {
-                        return getBadRequestResponse("voucher value can't be changed");
-                    }
-
-                    if (!originalVoucher.getType().equals(newVoucher.getType())) {
-                        if (!originalVoucher.isConsumed()) {
-                            originalVoucher.setType(newVoucher.getType());
-                        } else {
-                            return getBadRequestResponse("");
-                        }
-                    }
-                    
-                    if (!originalVoucher.isConsumed() && newVoucher.isConsumed()) {
-                        if (newVoucher.getConsumedDateTime() != null) {
-                            originalVoucher.setConsumed(newVoucher.isConsumed());
-                            originalVoucher.setConsumedDateTime(newVoucher.getConsumedDateTime());
-                        } else {
-                            return getBadRequestResponse("missing consumedDateTime attribute");
-                        }
-                    }
-
-                    userDao.modifyUserVoucher(originalVoucher, user);
-
-                    return Response.ok(originalVoucher).build();
-                } else {
-                    return Response.status(Response.Status.NOT_FOUND).build();
+                if (newVoucher.getValue() != originalVoucher.getValue()) {
+                    return getBadRequestResponse("voucher value can't be changed");
                 }
+
+                if (!originalVoucher.getType().equals(newVoucher.getType())) {
+                    if (!originalVoucher.isConsumed()) {
+                        originalVoucher.setType(newVoucher.getType());
+                    } else {
+                        return getBadRequestResponse("cannot change voucher type if the voucher has been consumed");
+                    }
+                }
+                
+                if (!originalVoucher.isConsumed() && newVoucher.isConsumed()) {
+                    if (newVoucher.getConsumedDateTime() != null) {
+                        originalVoucher.setConsumed(newVoucher.isConsumed());
+                        originalVoucher.setConsumedDateTime(newVoucher.getConsumedDateTime());
+                    } else {
+                        return getBadRequestResponse("missing consumedDateTime attribute");
+                    }
+                }
+
+                userDao.modifyUserVoucher(originalVoucher, user);
+
+                return Response.ok(originalVoucher).build();
             } else {
                 return Response.status(Response.Status.NOT_FOUND).build();
             }
@@ -393,7 +402,7 @@ public class UserResource {
         if (voucher.getValue() <= 0) {
             return false;
         }
-        if (voucher.getCreatedDateTime() == null) {
+        if (voucher.getCreatedDateTime() == null || !isDateTimeCorrect(voucher.getCreatedDateTime())) {
             return false;
         }
         
@@ -451,5 +460,18 @@ public class UserResource {
                        .entity(responseBody)
                        .type(MediaType.APPLICATION_JSON)
                        .build();
+    }
+
+    private boolean isDateTimeCorrect(String dateTime) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        dateFormat.setLenient(false);
+
+        try {
+            dateFormat.parse(dateTime.trim());
+        } catch (ParseException e) {
+            return false;
+        }
+
+        return true;
     }
 }

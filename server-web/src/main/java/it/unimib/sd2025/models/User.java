@@ -37,7 +37,6 @@ public class User {
     }
 
     public void setEmail(String email) {
-        // TODO add check of email structure
         if (email == null || email == "") {
             throw new RuntimeException("User email cannot be null or empty");
         }

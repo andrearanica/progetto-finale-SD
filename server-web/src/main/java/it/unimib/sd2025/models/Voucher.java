@@ -21,7 +21,6 @@ public class Voucher {
     }
 
     public void setType(String type) {
-        // TODO make this value in a list of possible values
         if (type == null || type.equals("")) {
             throw new RuntimeException("Voucher type cannot be null or empty");
         }
