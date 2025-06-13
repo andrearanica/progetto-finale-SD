@@ -135,7 +135,7 @@ public class UserResource {
         if (user != null) {
             return Response.ok(user).build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return getNotFoundResponse(String.format("cannot find user with fiscal code '%s'", fiscalCode));
         }
     }
 
@@ -152,7 +152,7 @@ public class UserResource {
             userToModify = findUserByFiscalCode(fiscalCode);
 
             if (userToModify == null) {
-                return Response.status(Response.Status.NOT_FOUND).build();
+                return getNotFoundResponse(String.format("cannot find user with fiscal code '%s'", fiscalCode));
             }
     
             userToModify.setName(user.getName());
@@ -184,7 +184,7 @@ public class UserResource {
         if (user != null) {
             return Response.ok(user.getVouchers()).build();
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return getNotFoundResponse(String.format("cannot find user with fiscal code '%s'", fiscalCode));
         }
     }
 
@@ -234,7 +234,7 @@ public class UserResource {
                 return getBadRequestResponse("voucher value not valid");
             }
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return getNotFoundResponse(String.format("cannot find user with fiscal code '%s'", fiscalCode));
         }
     }
 
@@ -263,10 +263,10 @@ public class UserResource {
             if (voucher != null) {
                 return Response.ok(voucher).build();
             } else {
-                return Response.status(Response.Status.NOT_FOUND).build();
+                return getNotFoundResponse(String.format("cannot find voucher with ID '%d' in user '%s'", voucherId, fiscalCode));
             }
         } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
+            return getNotFoundResponse(String.format("cannot find user with fiscal code '%s'", fiscalCode));
         }
     }
 
@@ -290,7 +290,7 @@ public class UserResource {
                 originalVoucher = findUserVoucherById(user, voucherId);
 
                 if (originalVoucher == null) {
-                    return Response.status(Response.Status.NOT_FOUND).build();
+                    return getNotFoundResponse(String.format("cannot find voucher with ID '%d' in user '%s'", voucherId, fiscalCode));
                 }
 
                 if (!isModifyVoucherValid(originalVoucher, newVoucher, user)) {
@@ -322,7 +322,7 @@ public class UserResource {
 
                 return Response.ok(originalVoucher).build();
             } else {
-                return Response.status(Response.Status.NOT_FOUND).build();
+                return getNotFoundResponse(String.format("cannot find user with fiscal code '%s'", fiscalCode));
             }
         } finally {
             lock.writeLock().unlock();
@@ -348,10 +348,10 @@ public class UserResource {
                         return getBadRequestResponse("cannot delete used voucher");
                     }
                 } else {
-                    return Response.status(Response.Status.NOT_FOUND).build();
+                    return getNotFoundResponse(String.format("cannot find voucher with ID '%d' in user '%s'", voucherId, fiscalCode));
                 }
             } else {
-                return Response.status(Response.Status.NOT_FOUND).build();
+                return getNotFoundResponse(String.format("cannot find user with fiscal code '%s'", fiscalCode));
             }
         } finally {
             lock.writeLock().unlock();
@@ -457,6 +457,14 @@ public class UserResource {
     private Response getBadRequestResponse(String errorMessage) {
         String responseBody = String.format("{\"error\": \"%s\"}", errorMessage);
         return Response.status(Response.Status.BAD_REQUEST)
+                       .entity(responseBody)
+                       .type(MediaType.APPLICATION_JSON)
+                       .build();
+    }
+
+    private Response getNotFoundResponse(String errorMessage) {
+        String responseBody = String.format("{\"error\": \"%s\"}", errorMessage);
+        return Response.status(Response.Status.NOT_FOUND)
                        .entity(responseBody)
                        .type(MediaType.APPLICATION_JSON)
                        .build();
