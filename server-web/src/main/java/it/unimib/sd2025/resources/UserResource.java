@@ -51,7 +51,7 @@ public class UserResource {
     public Response addUser(User user) {
         // First I check that the user's attributes are valid for the request
         if (user == null || !areUserAttributesNotNull(user)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return getBadRequestResponse("user attributes cannot be 'null'");
         }
 
         user.setBalance(START_BALANCE);
@@ -60,7 +60,7 @@ public class UserResource {
         try {
             // If the given user has a not valid fiscal code, 
             if (!isFiscalCodeUnique(user.getFiscalCode())) {
-                return Response.status(Response.Status.BAD_REQUEST).build();
+                return getBadRequestResponse("fiscal code is already used");
             }
             userDao.addUser(user);
         } finally {
@@ -188,7 +188,7 @@ public class UserResource {
     public Response addUserVoucher(@PathParam("fiscalCode") String fiscalCode, Voucher voucher) {
         // First I check if the voucher is valid
         if (!areVoucherAttributesValid(voucher)) {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return getBadRequestResponse("voucher attributes are not valid");
         }
 
         User user = null;
@@ -224,7 +224,7 @@ public class UserResource {
                 
                 return Response.ok(voucher).build();
             } else {
-                return Response.status(Response.Status.BAD_REQUEST).build();
+                return getBadRequestResponse("voucher value not valid");
             }
         } else {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -279,21 +279,21 @@ public class UserResource {
                 originalVoucher = findUserVoucherById(user, voucherId);
 
                 if (!isModifyVoucherValid(originalVoucher, newVoucher, user)) {
-                    return Response.status(Response.Status.BAD_REQUEST).build();
+                    return getBadRequestResponse("new voucher values are not valid");
                 }
 
                 if (originalVoucher != null) {
                     boolean voucherValueHasChanged = newVoucher.getValue() != originalVoucher.getValue();
 
                     if (voucherValueHasChanged) {
-                        return Response.status(Response.Status.BAD_REQUEST).build();
+                        return getBadRequestResponse("voucher value can't be changed");
                     }
 
                     if (!originalVoucher.getType().equals(newVoucher.getType())) {
                         if (!originalVoucher.isConsumed()) {
                             originalVoucher.setType(newVoucher.getType());
                         } else {
-                            return Response.status(Response.Status.BAD_REQUEST).build();
+                            return getBadRequestResponse("");
                         }
                     }
                     
@@ -302,7 +302,7 @@ public class UserResource {
                             originalVoucher.setConsumed(newVoucher.isConsumed());
                             originalVoucher.setConsumedDateTime(newVoucher.getConsumedDateTime());
                         } else {
-                            return Response.status(Response.Status.BAD_REQUEST).build();
+                            return getBadRequestResponse("missing consumedDateTime attribute");
                         }
                     }
 
@@ -336,7 +336,7 @@ public class UserResource {
                         userDao.deleteUserVoucher(voucher, user);
                         return Response.ok().build();
                     } else {
-                        return Response.status(Response.Status.BAD_REQUEST).build();
+                        return getBadRequestResponse("cannot delete used voucher");
                     }
                 } else {
                     return Response.status(Response.Status.NOT_FOUND).build();
@@ -443,5 +443,13 @@ public class UserResource {
         }
 
         return true;
+    }
+
+    private Response getBadRequestResponse(String errorMessage) {
+        String responseBody = String.format("{\"error\": \"%s\"}", errorMessage);
+        return Response.status(Response.Status.BAD_REQUEST)
+                       .entity(responseBody)
+                       .type(MediaType.APPLICATION_JSON)
+                       .build();
     }
 }
