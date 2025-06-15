@@ -69,12 +69,12 @@
 	      });
       });
 
-      /*
+      
       // GESTIONE DELLA AUTENTICAZIONE
-      async function createCollectionOnPageLoad(collectionCF) {
+      async function createCollectionOnPageLoad(fiscalCode) {
         try {
           // Prepara il corpo della richiesta in formato JSON con la chiave "collectionCF"
-          const requestBody = JSON.stringify({ collectionCF });
+          const requestBody = JSON.stringify({ fiscalCode });
 
           const response = await fetch('http://localhost:8080/collections', {
             method: 'POST',
@@ -87,41 +87,36 @@
           if (!response.ok) {
             // Se il server risponde con un errore, registra i dettagli dell'errore
             const errorDetails = await response.json();
-            console.error('Error creating collection. Server responded with:', errorDetails);
+            console.error('Si è verificato un errore durante la creazione della collezione. Il server dice:', errorDetails);
           } else {
             // Registra il messaggio di successo
             const successMessage = await response.json();
             console.log(successMessage);
           }
         } catch (error) {
-          console.error('Error:', error);
+          console.error('Errore:', error);
         }
       }
 
       // Chiama la funzione createCollection non appena la pagina viene caricata
       window.onload = function() {
-        createCollectionOnPageLoad("registrations");
+        createCollectionOnPageLoad("Location");
       };
 
       function resetLoginForm() {
-        // Reset the login form fields
-        document.getElementById('login-form').reset();
+        // Resetta il form di autenticazione
+        document.getElementById('formAutenticazione').reset();
       }
 
-      document.getElementById('create-account').addEventListener('click', function() {
-        // Redirect to the account creation page
-        window.location.replace('../registration-page/registration.html');
-      });
+      document.getElementById('formAutenticazione').addEventListener('submit', async function (event) {
+        event.preventDefault(); // Previene che il form venga inviato in modo tradizionale
 
-      document.getElementById('login-form').addEventListener('submit', async function (event) {
-        event.preventDefault(); // Prevent the form from submitting in the traditional way
-
-        // Serialize form data into a JSON object
+        // Serializzo i dati contenuti nel form di autenticazione in JSON
         const formData = new FormData(this);
         const jsonData = {};
 
-        // Initialize userId as empty string
-        jsonData.userId = "";
+        // Inizializzo il codice fiscale a una stringa vuota
+        jsonData.fiscalCode = "";
 
         formData.forEach((value, key) => {
           jsonData[key] = value;
@@ -139,24 +134,24 @@
           });
 
           if (!response.ok) {
-            // If the server responds with an error, throw an exception
+            // Se la risposta non è OK, gestisco l'errore
             const errorDetails = await response.text();
-            throw new Error('Error logging in. Server responded with: ' + errorDetails);
+            throw new Error('È stato riscontrato un errore durante la fase di autenticazione. Ulteriori dettagli: ' + errorDetails);
           }
 
           // On successful login, store the session token and redirect to the homepage
-          sessionStorage.setItem('sessionToken', jsonData.userId);
-          window.location.replace('../home-page/homepage.html');
+          sessionStorage.setItem('sessionToken', jsonData.fiscalCode); // Salvo il codice fiscale nella sessione
+          window.location.replace('/stato-globale-sistema/home.html'); // Reindirizzo alla home page
           resetLoginForm(); // Reset the form fields
         } catch (error) {
-          console.error('Error:', error.message);
-          // Prepare debug information for the error message
+          console.error('Errore:', error.message);
+          // Preparo i dati per il debug
           const requestBodyDebugInfo = JSON.stringify(jsonData, null, 2); // Pretty print JSON
-          // Display an error alert with debug information
-          alert('Error logging in. Please try again. Debug info: ' + error.message + '\nRequest Body: ' + requestBodyDebugInfo);
+          // Mostro un alert con le informazioni di debug
+          alert('Errore durante la fase di autenticazione. Si prega di tentare di nuovo. Ulteriori dettagli: ' + error.message + '\nRequest Body: ' + requestBodyDebugInfo);
         }
       });
-      */
+      
 
       // GESTIONE DELLA REGISTRAZIONE
       // Reset della registrazione
@@ -166,7 +161,7 @@
 
       // Aggiungo EventListener per il form di registrazione
       document.getElementById('formRegistrazione').addEventListener('submit', async function(event) {
-        event.preventDefault(); // Prevent default form submission
+        event.preventDefault(); // Previene che il form venga inviato in modo tradizionale
 
         // Serializzo i dati contenuti nel form di registrazione in JSON
         const formData = new FormData(this);
@@ -175,7 +170,6 @@
         formData.forEach((value, key) => {
           jsonData[key] = value;
         });
-
         // Controllo se l'e-mail è già in uso
         try {
           const controlloEmail = await fetch('http://localhost:8080/users', {
@@ -214,6 +208,7 @@
             },
             body: JSON.stringify(jsonData)
           });
+          jsonData.balance = 500; // Setto il balance a 500
 
           if (!response.ok) {
             const errorDetails = await response.text();
@@ -227,13 +222,13 @@
 
           // Aspetta 0.5 secondi prima di reindirizzare
           setTimeout(() => {
-            window.location.replace('../stato-globale-sistema/home.html');
+            window.location.replace('/stato-globale-sistema/home.html');
           }, 500);
           resetRegistrationForm(); // Resetta credenziali della registrazione a seguito del cambio di pagina
 
         } catch (error) {
           console.error('Errore:', error.message);
-          const requestBodyDebugInfo = JSON.stringify(jsonData, null, 2); // Pretty print JSON
+          const requestBodyDebugInfo = JSON.stringify(jsonData, null, 2); 
           alert('Errore nella registrazione utente. Si prega di tentare di nuovo. Debug info: ' + error.message + '\nRequest Body: ' + requestBodyDebugInfo);
         }
       });
