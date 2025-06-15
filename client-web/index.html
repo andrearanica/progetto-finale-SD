@@ -76,7 +76,7 @@
           // Prepara il corpo della richiesta in formato JSON con la chiave "collectionCF"
           const requestBody = JSON.stringify({ fiscalCode });
 
-          const response = await fetch('http://localhost:8080/collections', {
+          const response = await fetch('http://localhost:8080/users', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
