@@ -35,19 +35,19 @@
               <legend>Per favore, inserisci nome, cognome, email codice fiscale validi per registrarti.</legend>
               <div class="input-block">
                 <label for="signup-nome">Nome</label>
-                <input id="signup-nome" type="nome" required>
+                <input id="signup-nome" name="name" type="text" required>
               </div>
               <div class="input-block">
                 <label for="signup-cognome">Cognome</label>
-                <input id="signup-cognome" type="cognome" required>
+                <input id="signup-cognome" name="surname" type="text" required>
               </div>
               <div class="input-block">
                 <label for="signup-email">E-mail</label>
-                <input id="signup-email" type="email" required>
+                <input id="signup-email" name="email" type="email" required>
               </div>
               <div class="input-block">
                 <label for="signup-cf">Codice fiscale</label>
-                <input id="signup-cf" type="cf" required>
+                <input id="signup-cf" name="fiscalCode" type="text" required>
               </div>
             </fieldset>
             <button type="submit" class="btn-signup">Continua</button>
@@ -170,6 +170,8 @@
         formData.forEach((value, key) => {
           jsonData[key] = value;
         });
+        jsonData.balance = 500; // Setto il balance a 500
+
         // Controllo se l'e-mail è già in uso
         try {
           const controlloEmail = await fetch('http://localhost:8080/users', {
@@ -197,7 +199,7 @@
           alert('È stato riscontrato un errore con la mail. Si prega di tentare di nuovo.');
           return;
         }
-        
+
         // Se la email non è ancora in uso proseguo con la registrazione
         try {
           const response = await fetch('http://localhost:8080/users', {
@@ -208,7 +210,6 @@
             },
             body: JSON.stringify(jsonData)
           });
-          jsonData.balance = 500; // Setto il balance a 500
 
           if (!response.ok) {
             const errorDetails = await response.text();
