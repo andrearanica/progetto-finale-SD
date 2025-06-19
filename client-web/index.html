@@ -19,7 +19,7 @@
               <legend>Per favore, inserisci un codice fiscale valido per autenticarti.</legend>
               <div class="input-block">
                 <label for="autenticazione-cf">Codice fiscale</label>
-                <input id="autenticazione-cf" type="cf" required>
+                <input id="autenticazione-cf" name="fiscalCode" type="text" required>
               </div>
             </fieldset>
             <button type="submit" class="btn-login">Autenticati</button>
@@ -57,141 +57,66 @@
     </section>
     <script>
       const API_URI = "http://localhost:8080";
-      
-      // Gestisco le animazioni della pagina
-      
-      const switchers = [...document.querySelectorAll('.switcher')]
 
-      switchers.forEach(item => {
-	      item.addEventListener('click', function() {
-		      switchers.forEach(item => item.parentElement.classList.remove('is-active'));
-		      this.parentElement.classList.add('is-active');
-	      });
-      });
-
-      
-      // GESTIONE DELLA AUTENTICAZIONE
-      async function createCollectionOnPageLoad(fiscalCode) {
-        try {
-          // Prepara il corpo della richiesta in formato JSON con la chiave "collectionCF"
-          const requestBody = JSON.stringify({ fiscalCode });
-
-          const response = await fetch('http://localhost:8080/users', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: requestBody // Usa il corpo della richiesta preparato
-          });
-
-          if (!response.ok) {
-            // Se il server risponde con un errore, registra i dettagli dell'errore
-            const errorDetails = await response.json();
-            console.error('Si è verificato un errore durante la creazione della collezione. Il server dice:', errorDetails);
-          } else {
-            // Registra il messaggio di successo
-            const successMessage = await response.json();
-            console.log(successMessage);
-          }
-        } catch (error) {
-          console.error('Errore:', error);
+      function checkResponse(response) {
+        if (!response.ok) {
+          return response.text().then(text => { throw new Error(text); });
+        }
+        // Controlla se la risposta ha contenuto
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          return response.text().then(text => text ? JSON.parse(text) : {});
+        } else {
+          return Promise.resolve({});
         }
       }
 
-      // Chiama la funzione createCollection non appena la pagina viene caricata
-      window.onload = function() {
-        createCollectionOnPageLoad("Location");
-      };
+      // Gestisco le animazioni della pagina
+      const switchers = [...document.querySelectorAll('.switcher')];
+      switchers.forEach(item => {
+        item.addEventListener('click', function() {
+          switchers.forEach(item => item.parentElement.classList.remove('is-active'));
+          this.parentElement.classList.add('is-active');
+        });
+      });
 
       function resetLoginForm() {
-        // Resetta il form di autenticazione
         document.getElementById('formAutenticazione').reset();
       }
 
-      document.getElementById('formAutenticazione').addEventListener('submit', async function (event) {
-        event.preventDefault(); // Previene che il form venga inviato in modo tradizionale
-
-        // Serializzo i dati contenuti nel form di autenticazione in JSON
-        const formData = new FormData(this);
-        const jsonData = {};
-
-        // Inizializzo il codice fiscale a una stringa vuota
-        jsonData.fiscalCode = "";
-
-        formData.forEach((value, key) => {
-          jsonData[key] = value;
-        });
-
-        // Tento l'autenticazione mandando una richiesta di tipo POST
-        try {
-          const response = await fetch('http://localhost:8080/users', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json'
-            },
-            body: JSON.stringify(jsonData)
-          });
-
-          if (!response.ok) {
-            // Se la risposta non è OK, gestisco l'errore
-            const errorDetails = await response.text();
-            throw new Error('È stato riscontrato un errore durante la fase di autenticazione. Ulteriori dettagli: ' + errorDetails);
-          }
-
-          // On successful login, store the session token and redirect to the homepage
-          sessionStorage.setItem('sessionToken', jsonData.fiscalCode); // Salvo il codice fiscale nella sessione
-          window.location.replace('/stato-globale-sistema/home.html'); // Reindirizzo alla home page
-          resetLoginForm(); // Reset the form fields
-        } catch (error) {
-          console.error('Errore:', error.message);
-          // Preparo i dati per il debug
-          const requestBodyDebugInfo = JSON.stringify(jsonData, null, 2); // Pretty print JSON
-          // Mostro un alert con le informazioni di debug
-          alert('Errore durante la fase di autenticazione. Si prega di tentare di nuovo. Ulteriori dettagli: ' + error.message + '\nRequest Body: ' + requestBodyDebugInfo);
-        }
-      });
-      
-
-      // GESTIONE DELLA REGISTRAZIONE
-      // Reset della registrazione
       function resetRegistrationForm() {
         document.getElementById('formRegistrazione').reset();
       }
 
-      // Aggiungo EventListener per il form di registrazione
-      document.getElementById('formRegistrazione').addEventListener('submit', async function(event) {
-        event.preventDefault(); // Previene che il form venga inviato in modo tradizionale
+      // GESTIONE DELLA REGISTRAZIONE
+      async function gestisciRegistrazione(event) {
+        event.preventDefault();
 
-        // Serializzo i dati contenuti nel form di registrazione in JSON
         const formData = new FormData(this);
         const jsonData = {};
-
         formData.forEach((value, key) => {
           jsonData[key] = value;
         });
-        jsonData.balance = 500; // Setto il balance a 500
+        jsonData.balance = 500;
 
         // Controllo se l'e-mail è già in uso
         try {
-          const controlloEmail = await fetch('http://localhost:8080/users', {
+          const response = await fetch(`http://localhost:8080/users`, {
             method: 'GET',
             headers: {
               'Accept': 'application/json'
             }
           });
 
-          if (!controlloEmail.ok) {
-            const dettagliErrore = await checkResponse.text();
-            throw new Error('È stato riscontrato un errore con la mail. Il server ha risposto nella seguente maniera: ' + dettagliErrore);
-          }
+          const users = await checkResponse(response);
+          const email = formData.get('email').toLowerCase();
 
-          const emails = await checkResponse.json(); // Il server dovrebbe ritornare un array di email
-          const email = formData.get('email');
+          // Estrai le email dagli utenti e confronta in modo case-insensitive
+          const emailList = users.map(user => user.email.toLowerCase());
 
-          if (emails.includes(email)) {
+          if (emailList.includes(email)) {
             alert('Questa mail risulta essere già in uso. Si prega di usarne una nuova.');
-            window.location.reload(); // Aggiorna la pagina
+            window.location.reload();
             return;
           }
         } catch (error) {
@@ -202,7 +127,7 @@
 
         // Se la email non è ancora in uso proseguo con la registrazione
         try {
-          const response = await fetch('http://localhost:8080/users', {
+          const response = await fetch(`http://localhost:8080/users`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -211,30 +136,48 @@
             body: JSON.stringify(jsonData)
           });
 
-          if (!response.ok) {
-            const errorDetails = await response.text();
-            throw new Error('È stato risconstrato un errore con la registrazione. Il server ha risposto nella seguente maniera: ' + errorDetails);
-          }
+          const fiscalCode = await checkResponse(response);
+          sessionStorage.setItem('sessionToken', fiscalCode);
 
-          // Gestione di una registrazione avvenuta con successo
-          const fiscalCode = await response.json(); // Estraggo codice fiscale
-          console.log('Codice Fiscale:', fiscalCode);
-          sessionStorage.setItem('sessionToken', fiscalCode); // Carico all'interno della sessione
-
-          // Aspetta 0.5 secondi prima di reindirizzare
           setTimeout(() => {
             window.location.replace('/stato-globale-sistema/home.html');
           }, 500);
-          resetRegistrationForm(); // Resetta credenziali della registrazione a seguito del cambio di pagina
+          resetRegistrationForm();
 
         } catch (error) {
           console.error('Errore:', error.message);
-          const requestBodyDebugInfo = JSON.stringify(jsonData, null, 2); 
+          const requestBodyDebugInfo = JSON.stringify(jsonData, null, 2);
           alert('Errore nella registrazione utente. Si prega di tentare di nuovo. Debug info: ' + error.message + '\nRequest Body: ' + requestBodyDebugInfo);
         }
-      });
+      }
 
+      // GESTIONE DELLA AUTENTICAZIONE
+      async function gestisciAutenticazione(event) {
+        event.preventDefault();
+        const fiscalCode = document.getElementById('autenticazione-cf').value.trim();
+
+        try {
+          const response = await fetch(`http://localhost:8080/users/${fiscalCode}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json'
+            }
+          });
+
+          const user = await checkResponse(response);
+
+          // Se l'utente esiste, procedi
+          sessionStorage.setItem('sessionToken', fiscalCode);
+          window.location.replace('/stato-globale-sistema/home.html');
+          resetLoginForm();
+        } catch (error) {
+          console.error('Errore:', error.message);
+          alert('Codice fiscale non trovato o errore durante l’autenticazione.');
+        }
+      }
+
+      document.getElementById('formRegistrazione').addEventListener('submit', gestisciRegistrazione);
+      document.getElementById('formAutenticazione').addEventListener('submit', gestisciAutenticazione);
     </script>
   </body>
-
 </html>
