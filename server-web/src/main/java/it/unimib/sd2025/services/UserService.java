@@ -34,10 +34,10 @@ public class UserService {
         this.userDao = userDao;
     }
 
-    public Map<String, User> getUsers() {
+    public List<User> getAllUsers() {
         lock.readLock().lock();
         try {
-            Map<String, User> users = userDao.getUsers();
+            List<User> users = userDao.getAllUsers();
             return users;
         } finally {
             lock.readLock().unlock();
@@ -313,19 +313,21 @@ public class UserService {
             }
         }
 
-        Pattern pattern = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}");
-        Matcher mat = pattern.matcher(user.getEmail());
-
-        if (!mat.find()) {
-            invalidAttributes.add("email");
+        if (!invalidAttributes.contains("email")) {
+            Pattern pattern = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}");
+            Matcher mat = pattern.matcher(user.getEmail());
+    
+            if (!mat.find()) {
+                invalidAttributes.add("email");
+            }    
         }
-
+        
         return invalidAttributes;
     }
 
     public boolean isFiscalCodeUnique(String fiscalCode) {
-        for (String fiscalCodeKey : userDao.getUsers().keySet()) {
-            if (fiscalCodeKey.equals(fiscalCode)) {
+        for (User user : userDao.getAllUsers()) {
+            if (user.getFiscalCode().equals(fiscalCode)) {
                 return false;
             }
         }
@@ -333,7 +335,7 @@ public class UserService {
     }
 
     private User findUserByFiscalCode(String fiscalCode) {
-        for (User user : userDao.getUsers().values()) {
+        for (User user : userDao.getAllUsers()) {
             if (user.getFiscalCode().equals(fiscalCode)) {
                 return user;
             }

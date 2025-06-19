@@ -3,7 +3,6 @@ package it.unimib.sd2025.resources;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 
 import it.unimib.sd2025.models.User;
 import it.unimib.sd2025.models.Voucher;
@@ -28,14 +27,18 @@ import jakarta.ws.rs.core.Response;
 
 @Path("users")
 public class UserResource {
-    private final UserService userService = new UserService(new UserDaoTcp("localhost", 
-                                                                           3030));
+    private UserService userService;
+
+    public UserResource() {
+        UserDaoTcp database = new UserDaoTcp("localhost", 3030);
+        userService = new UserService(database);
+    }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getUsers() {
         try {
-            Map<String, User> users = userService.getUsers();
+            List<User> users = userService.getAllUsers();
             return Response.ok(users).build();
         } catch (Exception e) {
             String errorMessage = "Internal Server Error trying to get all users";
@@ -131,9 +134,7 @@ public class UserResource {
         try {
             Voucher voucher = userService.getUserVoucherById(fiscalCode, voucherId);
             return Response.ok(voucher).build();
-        } catch (UserNotFoundException e) {
-            return getNotFoundResponse(e.getMessage());
-        } catch (VoucherNotFoundException e) {
+        } catch (UserNotFoundException | VoucherNotFoundException e) {
             return getNotFoundResponse(e.getMessage());
         }
     }
@@ -147,13 +148,9 @@ public class UserResource {
             Voucher modifiedVoucher = userService.modifyUserVoucherById(fiscalCode, voucherId, 
                                                                         newVoucher);
             return Response.ok(modifiedVoucher).build();
-        } catch (UserNotFoundException e) {
+        } catch (UserNotFoundException | VoucherNotFoundException e) {
             return getNotFoundResponse(e.getMessage());
-        } catch (VoucherNotFoundException e) {
-            return getNotFoundResponse(e.getMessage());
-        } catch (InvalidVoucherException e) {
-            return getBadRequestResponse(e.getMessage());
-        } catch (InvalidModifyVoucherException e) {
+        } catch (InvalidVoucherException | InvalidModifyVoucherException e) {
             return getBadRequestResponse(e.getMessage());
         } catch (Exception e) {
             String errorMessage = "Internal Server Error while modifying user voucher";
@@ -168,9 +165,7 @@ public class UserResource {
         try {
             userService.deleteUserVoucherById(fiscalCode, voucherId);
             return Response.ok().build();
-        } catch (UserNotFoundException e) {
-            return getNotFoundResponse(e.getMessage());
-        } catch (VoucherNotFoundException e) {
+        } catch (UserNotFoundException | VoucherNotFoundException e) {
             return getNotFoundResponse(e.getMessage());
         } catch (InvalidDeleteVoucherException e) {
             return getBadRequestResponse(e.getMessage());

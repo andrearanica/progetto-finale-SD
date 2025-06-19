@@ -7,10 +7,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 public class UserDaoTcp implements IUserDao {
     private String address;
@@ -23,9 +21,9 @@ public class UserDaoTcp implements IUserDao {
         this.port = port;
     }
 
-    public Map<String, User> getUsers() {
+    public List<User> getAllUsers() {
         List<String> fiscalCodes = getListFromDB("fiscalCodes");
-        Map<String, User> users = new HashMap<String, User>();
+        List<User> users = new ArrayList<User>();
 
         for (String fiscalCode : fiscalCodes) {
             String userName = getUserPropertyFromDB(fiscalCode, "name");
@@ -42,7 +40,7 @@ public class UserDaoTcp implements IUserDao {
             user.setBalance(Float.parseFloat(userBalanceRaw.replace(",", ".")));
             user.setVouchers(userVouchers);
 
-            users.put(fiscalCode, user);
+            users.add(user);
         }
 
         return users;

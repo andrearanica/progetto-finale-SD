@@ -1,22 +1,24 @@
 # Progetto Sistemi Distribuiti 2024-2025 - API REST
 
-**Attenzione**: l'unica rappresentazione ammessa è in formato JSON. Pertanto vengono assunti gli header `Content-Type: application/json` e `Accept: application/json`.
+**Attenzione**: l'unica rappresentazione ammessa è in formato JSON. Pertanto vengono assunti gli 
+header `Content-Type: application/json` e `Accept: application/json`.
 
 ## `/users`
 
-### ✅​ GET​
+### GET​
 
-**Descrizione**: restituisce le informazioni su tutti gli utenti registrati nel sistema.
+**Descrizione**: restituisce le rappresentazioni di tutti gli utenti registrati nel sistema.
 
 **Parametri**: nessuno.
 
 **Header**: nessuno.
 
-**Risposta**: una lista contenenti oggetti che hanno come campi `name`, `surname`, `email`, `fiscalCode`, `balance` e `vouchers` (lista di `voucher`).
+**Risposta**: una lista di rappresentazioni di oggetti `user`; i campi di ogni oggetto sono 
+`balance`, `email`, `fiscalCode`, `name`, `surname`, `vouchers` (che è una lista di `voucher`).
 
-**Codici di stato restituiti**: `200 OK`.
+**Codici di stato restituiti**: `200 OK`
 
-### ✅​ POST
+### POST
 
 **Descrizione**: aggiunge un utente al sistema.
 
@@ -35,93 +37,104 @@
 
 ## `/users/{fiscalCode}`
 
-### ✅ ​GET
+### ​GET
 
-**Descrizione**: restituisce le informazioni su un preciso utente del sistema.
+**Descrizione**: restituisce la rappresentazione di un utente del sistema.
 
-**Parametri**: fiscalCode, ossia il codice fiscale dell'utente.
-
-**Header**: nessuno.
-
-**Risposta**: un oggetto User, che ha come campi `name`, `surname`, `email`, `fiscalCode` e `balance`.
-
-**Codici di stato restituiti**: 
-* `200 OK`
-* `404 Not Found` se il codice fiscale non è registrato nel sistema.
-
-### ✅​ PUT
-
-**Descrizione**: sistituisce un utente nel sistema.
-
-**Parametri**: fiscalCode, ossia il codice fiscale dell'utente.
+**Parametri**: `fiscalCode`, ossia il codice fiscale dell'utente.
 
 **Header**: nessuno.
 
-**Body**: una rappresentazione di User che contiene i nuovi dati da assegnare all'utente.
-
-**Risposta**: un oggetto User, che ha come campi `name`, `surname`, `email`, `fiscalCode` e `balance`.
+**Risposta**: un oggetto `User`, che ha come campi `name`, `surname`, `email`, `fiscalCode`, 
+`balance`, e `vouchers`, ossia una lista di oggetti `voucher`.
 
 **Codici di stato restituiti**: 
 * `200 OK`
-* `404 Not Found` se il codice fiscale non è registrato nel sistema.
+* `404 Not Found` se non è presente un utente con il codice fiscale fornito.
+
+### PUT
+
+**Descrizione**: sistituisce le informazioni di un utente nel sistema.
+
+**Parametri**: `fiscalCode`, ossia il codice fiscale dell'utente.
+
+**Header**: nessuno.
+
+**Body**: una rappresentazione di `user` che contiene i nuovi dati da assegnare all'utente.
+
+**Risposta**: un oggetto `User`, che ha come campi `name`, `surname`, `email`, `fiscalCode`, 
+`balance` e `vouchers`.
+
+**Codici di stato restituiti**: 
+* `200 OK`
+* `400 Bad Request` se i dati forniti non sono validi
+* `404 Not Found` se non è presente un utente con il codice fiscale fornito
 
 ## `/users/{fiscalCode}/vouchers/`
 
-### ✅ GET
+### GET
 
-**Descrizione**: restituisce le informazioni su tutti i voucher generati da un preciso utente del sistema.
+**Descrizione**: restituisce le rappresentazioni di tutti i voucher generati da un preciso utente 
+del sistema.
 
 **Parametri**: `fiscalCode`, ossia il codice fiscale dell'utente.
 
 **Header**: nessuno.
 
-**Risposta**: una lista di oggetti Voucher, che hanno come campi `type`, `value`, `consumed`, `createdDate`, `consumedDate`.
+**Risposta**: una lista di oggetti `voucher`, che hanno come campi `type`, `value`, `consumed`, 
+`createdDateTime`, `consumedDateTime`. 
+
+N.B. Le date seguono il formato `GG/MM/YYYY hh:mm:ss`.
 
 **Codici di stato restituiti**: 
 * `200 OK`
-* `404 Not Found` se il codice fiscale non è registrato nel sistema.
+* `404 Not Found` se non è presente un utente con il codice fiscale fornito.
 
-### ✅ POST
+### POST
 
-**Descrizione**: genera un voucher da associare all'utente specificato.
+**Descrizione**: aggiunge un voucher a un utente.
 
 **Parametri**: `fiscalCode`, ossia il codice fiscale dell'utente.
 
 **Header**: nessuno.
 
-**Body richiesta**: voucher con i campi `type` e `value`.
+**Body richiesta**: rappresentazione di un oggetto `Voucher`, con i campi `type`, `value` e 
+`createdDateTime`.
 
 **Risposta**: body vuoto e la risorsa creata è indicata nell'header `Location`.
 
 **Codici di stato restituiti**: 
 * `200 OK`.
-* `400 Bad request` se i dati forniti non sono validi (ad esempio se il saldo è insufficiente).
-* `404 Not Found` se il codice fiscale non è registrato nel sistema.
+* `400 Bad request` se i dati forniti non sono validi (ad esempio se il saldo dell'utente è 
+                                                        insufficiente o se mancano informazioni).
+* `404 Not Found` se non è presente un utente con il codice fiscale fornito.
 
 ## `/users/{fiscalCode}/vouchers/{voucherId}`
 
-### ✅ GET
+### GET
 
-**Descrizione**: restituisce le informazioni su uno specifico voucher di un utente.
+**Descrizione**: restituisce la rappresentazione di un voucher di un utente.
 
 **Parametri**: 
-* `fiscalCode`: il codice fiscale dell'utente.
-* `voucherId`: l'id univoco del voucher
+* `fiscalCode`: il codice fiscale dell'utente
+* `voucherId`: l'id del voucher
 
 **Header**: nessuno.
 
-**Risposta**: un oggetto Voucher, che ha come campi `type`, `value`, `consumed`, `createdDate`, `consumedDate`.
+**Risposta**: la rappresentazione di un oggetto `Voucher`, che ha come campi `id`, `type`, `value`, 
+`consumed`, `createdDate` e `consumedDate` (se `consumed` è `true`).
 
 **Codici di stato restituiti**: 
 * `200 OK`
-* `404 Not Found` se il codice fiscale non è registrato nel sistema oppure se non esiste un voucher con l'id fornito.
+* `404 Not Found` se non è presente un utente con il codice fiscale fornito oppure se non esiste un 
+                  voucher con l'id fornito.
 
-### ✅ PUT
+### PUT
 
-**Descrizione**: modifica un voucher associato all'utente specificato.
+**Descrizione**: modifica un voucher di un utente.
 
 **Parametri**: 
-* `fiscalCode`: il codice fiscale dell'utente.
+* `fiscalCode`: il codice fiscale dell'utente
 * `voucherId`: l'id univoco del voucher
 
 **Header**: nessuno.
@@ -132,10 +145,11 @@
 
 **Codici di stato restituiti**: 
 * `200 OK`.
-* `400 Bad request` se i dati forniti non sono validi.
-* `404 Not Found` se il codice fiscale non è registrato nel sistema oppure se non esiste un voucher con l'id fornito.
+* `400 Bad request` se i dati forniti non sono validi
+* `404 Not Found` se non è presente un utente con il codice fiscale fornito oppure se non esiste un 
+                  voucher con l'id fornito
 
-### ✅ DELETE
+### DELETE
 
 **Descrizione**: elimina un voucher associato all'utente specificato.
 
@@ -149,4 +163,5 @@
 
 **Codici di stato restituiti**: 
 * `200 OK`.
-* `404 Not Found` se il codice fiscale non è registrato nel sistema oppure se non esiste un voucher con l'id fornito.
+* `404 Not Found` se non è presente un utente con il codice fiscale fornito oppure se non esiste un 
+                  voucher con l'id fornito.
