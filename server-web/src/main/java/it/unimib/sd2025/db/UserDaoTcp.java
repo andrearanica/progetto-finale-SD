@@ -24,8 +24,7 @@ public class UserDaoTcp implements IUserDao {
     }
 
     public Map<String, User> getUsers() {
-        List<String> fiscalCodes = getFiscalCodes();
-
+        List<String> fiscalCodes = getListFromDB("fiscalCodes");
         Map<String, User> users = new HashMap<String, User>();
 
         for (String fiscalCode : fiscalCodes) {
@@ -49,55 +48,20 @@ public class UserDaoTcp implements IUserDao {
         return users;
     }
 
-    /**
-     * Returns all the fiscal codes saved inside the DB
-     * 
-     * @param socketInputStream
-     * @param socketOutputStream
-     * @return
-     */
-    public List<String> getFiscalCodes() {
-        String rawFiscalCodes = executeDBCommand("GETL fiscalCodes");
-        String[] fiscalCodesWithOk = rawFiscalCodes.split(" ");
+    public void addUser(User user) {
+        String balanceRaw = String.valueOf(user.getBalance());
 
-        // I remove the first item because the response is OK + fiscal codes
-        String[] fiscalCodes = Arrays.copyOfRange(fiscalCodesWithOk, 1, fiscalCodesWithOk.length);
-
-        return new ArrayList<String>(Arrays.asList(fiscalCodes));
+        addItemToListInDB("fiscalCodes", user.getFiscalCode());
+        saveUserPropertyInDB(user.getFiscalCode(), "name", user.getName());
+        saveUserPropertyInDB(user.getFiscalCode(), "surname", user.getSurname());
+        saveUserPropertyInDB(user.getFiscalCode(), "email", user.getEmail());
+        saveUserPropertyInDB(user.getFiscalCode(), "balance", balanceRaw);
     }
 
-    /**
-     * Returns the property of the user that has the given fiscalCode, saved in the DB
-     * 
-     * @param fiscalCode
-     * @param property, the key of the value in the DB
-     * @return
-     */
-    public String getUserPropertyFromDB(String fiscalCode, String property) {
-        String serverResponseWithOk = executeDBCommand(String.format("GET %s.%s", fiscalCode, property));
-        if (serverResponseWithOk.equals("OK ")) {
-            return null;
-        }
-        String serverResponseWithoutSpaces = serverResponseWithOk.split(" ")[1];
-
-        // Before returning the response, I replace every space delimiter with a space character
-        String serverResponse = serverResponseWithoutSpaces.replace(SPACE_DELIMITER, ' ');
-        return serverResponse;
-    }
-
-    /**
-     * Returns the list property of the user that has the given fiscalCode, saved in the DB
-     * 
-     * @param fiscalCode
-     * @param property the key of the list in the DB
-     * @return
-     */
     public List<Voucher> getUserVouchers(String fiscalCode) {
         List<Voucher> vouchers = new ArrayList<Voucher>();
 
-        String vouchersIdsRaw = executeDBCommand(String.format("GETL %s.vouchersIds", fiscalCode));
-        String[] vouchersIdsWithOk = vouchersIdsRaw.split(" ");
-        String[] vouchersIds = Arrays.copyOfRange(vouchersIdsWithOk, 1, vouchersIdsWithOk.length);
+        List<String> vouchersIds = getListFromDB(String.format("%s.vouchersIds", fiscalCode));
 
         for (String voucherIdRaw : vouchersIds) {
             int voucherId = Integer.parseInt(voucherIdRaw);
@@ -125,74 +89,11 @@ public class UserDaoTcp implements IUserDao {
         return vouchers;
     }
 
-    /**
-     * Returns the property of the user that has the given fiscalCode, saved in the DB
-     * 
-     * @param fiscalCode
-     * @param property, the key of the value in the DB
-     * @return
-     */
-    public String getVoucherPropertyFromDB(String fiscalCode, int voucherId, String property) {
-        String serverResponse = executeDBCommand(String.format("GET %s.voucher%d.%s", fiscalCode, voucherId, property));
-        if (serverResponse.equals("OK ")) {
-            return null;            
-        }
-
-        // Before returning the property, I replace each special character with the space
-        String serverResponseWithoutSpaces = serverResponse.split(" ")[1];
-        String serverResponseWithSpaces = serverResponseWithoutSpaces.replace(SPACE_DELIMITER, ' ');
-        return serverResponseWithSpaces;
-    }
-
-    /**
-     * Sets the voucher property with the given data in the DB
-     * 
-     * @param fiscalCode
-     * @param voucherId
-     * @param property
-     */
-    public void saveVoucherPropertyInDB(String fiscalCode, int voucherId, String property, String value) {
-        // Before running the command, I convert each space with the special character
-        String valueWithoutSpaces = value.replace(' ', SPACE_DELIMITER);
-
-        executeDBCommand(String.format("SET %s.voucher%d.%s %s", fiscalCode, voucherId, property, valueWithoutSpaces));
-    }
-
-    public void addUser(User user) {
-        executeDBCommand(String.format("ADDL fiscalCodes %s", user.getFiscalCode()));
-        executeDBCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "name", user.getName()));
-        executeDBCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "surname", user.getSurname()));
-        executeDBCommand(String.format("SET %s.%s %s", user.getFiscalCode(), "email", user.getEmail()));
-        executeDBCommand(String.format("SET %s.%s %f", user.getFiscalCode(), "balance", user.getBalance()));
-    }
-
-    /**
-     * Saves the user data in the DB if the user already exists and then return true, else return 
-     * False
-     * 
-     * @param user
-     * @return boolean
-     */
     public void modifyUser(User user) {
         saveUserPropertyInDB(user.getFiscalCode(), "name", user.getName());
         saveUserPropertyInDB(user.getFiscalCode(), "surname", user.getSurname());
         saveUserPropertyInDB(user.getFiscalCode(), "email", user.getEmail());
         saveUserPropertyInDB(user.getFiscalCode(), "balance", ""+user.getBalance());
-    }
-
-    /**
-     * Sets the given property of the user that has the given fiscalCode, saved in the DB
-     * 
-     * @param fiscalCode
-     * @param property, the key of the value in the DB
-     * @return
-     */
-    public void saveUserPropertyInDB(String fiscalCode, String property, String value) {
-        // Before running the command, I have to replace spaces with a special character because
-        if (value.contains(" ")) {
-            value.replace(' ', SPACE_DELIMITER);
-        }
-        executeDBCommand(String.format("SET %s.%s %s", fiscalCode, property, value));
     }
 
     public void addVoucherToUser(Voucher voucher, User user) {
@@ -239,13 +140,54 @@ public class UserDaoTcp implements IUserDao {
         executeDBCommand(deleteConsumedDateTimeCommand);
     }
 
-    /**
-     * Executes a command to the DB and returns its response
-     * 
-     * @param command
-     * @return
-     */
-    public String executeDBCommand(String command) {
+    private String getUserPropertyFromDB(String fiscalCode, String property) {
+        String serverResponseWithOk = executeDBCommand(String.format("GET %s.%s", fiscalCode, property));
+        if (serverResponseWithOk.equals("OK ")) {
+            return null;
+        }
+        String serverResponseWithoutSpaces = serverResponseWithOk.split(" ")[1];
+
+        // Before returning the response, I replace every space delimiter with a space character
+        String serverResponse = serverResponseWithoutSpaces.replace(SPACE_DELIMITER, ' ');
+        return serverResponse;
+    }
+
+    private String getVoucherPropertyFromDB(String fiscalCode, int voucherId, String property) {
+        String serverResponse = executeDBCommand(String.format("GET %s.voucher%d.%s", fiscalCode, voucherId, property));
+        if (serverResponse.equals("OK ")) {
+            return null;            
+        }
+
+        String serverResponseWithoutSpaces = serverResponse.split(" ")[1];
+        String serverResponseWithSpaces = serverResponseWithoutSpaces.replace(SPACE_DELIMITER, ' ');
+        return serverResponseWithSpaces;
+    }
+
+    private void saveVoucherPropertyInDB(String fiscalCode, int voucherId, String property, String value) {
+        // Before running the command, I convert each space with the special character
+        String valueWithoutSpaces = value.replace(' ', SPACE_DELIMITER);
+
+        executeDBCommand(String.format("SET %s.voucher%d.%s %s", fiscalCode, voucherId, property, valueWithoutSpaces));
+    }
+
+    private void saveUserPropertyInDB(String fiscalCode, String property, String value) {
+        // Before running the command, I have to replace spaces with a special character because
+        String valueWithoutSpaces = value.replace(' ', SPACE_DELIMITER);
+        executeDBCommand(String.format("SET %s.%s %s", fiscalCode, property, valueWithoutSpaces));
+    }
+
+    private void addItemToListInDB(String listName, String item) {
+        executeDBCommand(String.format("ADDL %s %s", listName, item));
+    }
+
+    private List<String> getListFromDB(String listName) {
+        String listRaw = executeDBCommand(String.format("GETL %s", listName));
+        String[] listWithOk = listRaw.split(" ");
+        String[] list = Arrays.copyOfRange(listWithOk, 1, listWithOk.length);
+        return Arrays.asList(list);
+    }
+
+    private String executeDBCommand(String command) {
         String response = null;
         
         try (Socket socket = new Socket(address, port)) {
