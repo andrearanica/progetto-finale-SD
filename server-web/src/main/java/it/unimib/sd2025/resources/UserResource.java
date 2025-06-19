@@ -5,6 +5,8 @@ import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -54,8 +56,13 @@ public class UserResource {
     @Consumes(MediaType.APPLICATION_JSON)
     public Response addUser(User user) {
         // First I check that the user's attributes are valid for the request
-        if (user == null || !areUserAttributesValid(user)) {
-            return getBadRequestResponse("user attributes are not valid");
+        if (user == null) {
+            return getBadRequestResponse("user is null");
+        }
+
+        List<String> invalidAttributes = getInvalidUserAttributes(user);
+        if (invalidAttributes.size() > 0) {
+            return getBadRequestResponse("user fields not valid (" + invalidAttributes + ")");
         }
 
         user.setBalance(START_BALANCE);
@@ -85,23 +92,29 @@ public class UserResource {
      * @param user
      * @return true if the users attributes are not null
      */
-    private boolean areUserAttributesValid(User user) {
-        ArrayList<String> valuesToCheck = new ArrayList<String>();
-        valuesToCheck.add(user.getFiscalCode());
-        valuesToCheck.add(user.getName());
-        valuesToCheck.add(user.getSurname());
-        valuesToCheck.add(user.getEmail());
+    private List<String> getInvalidUserAttributes(User user) {
+        List<String> invalidAttributes = new ArrayList<String>();
+
+        Map<String, String> valuesToCheckAreNotNull = new HashMap<String, String>();
+        valuesToCheckAreNotNull.put("fiscal code", user.getFiscalCode());
+        valuesToCheckAreNotNull.put("name", user.getName());
+        valuesToCheckAreNotNull.put("surname", user.getSurname());
+        valuesToCheckAreNotNull.put("email", user.getEmail());
         
-        for (String value : valuesToCheck) {
-            if (value == null) {
-                return false;
+        for (Map.Entry<String, String> entry : valuesToCheckAreNotNull.entrySet()) {
+            if (entry.getValue() == null) {
+                invalidAttributes.add(entry.getKey());
             }
         }
 
         Pattern pattern = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}");
         Matcher mat = pattern.matcher(user.getEmail());
 
-        return mat.find();
+        if (!mat.find()) {
+            invalidAttributes.add("email");
+        }
+
+        return invalidAttributes;
     }
 
     /**
@@ -194,8 +207,13 @@ public class UserResource {
     @Produces(MediaType.APPLICATION_JSON)
     public Response addUserVoucher(@PathParam("fiscalCode") String fiscalCode, Voucher voucher) {
         // First I check if the voucher is valid
-        if (!areVoucherAttributesValid(voucher)) {
-            return getBadRequestResponse("voucher attributes are not valid");
+        if (voucher == null) {
+            return getBadRequestResponse("voucher is null");
+        }
+
+        List<String> invalidAttributes = getInvalidVoucherAttributes(voucher);
+        if (invalidAttributes.size() > 0) {
+            return getBadRequestResponse("voucher attributes are not valid (" + invalidAttributes + ")");
         }
 
         User user = null;
@@ -209,7 +227,7 @@ public class UserResource {
 
         if (user != null) {
             // I check that the given voucher has a valid value
-            if (voucher.getValue() > 0 && voucher.getValue() <= user.getBalance()) {
+            if (voucher.getValue() <= user.getBalance()) {
                 int maxVoucherId = -1;
                 lock.writeLock().lock();
                 try {
@@ -231,7 +249,9 @@ public class UserResource {
                 
                 return Response.ok(voucher).build();
             } else {
-                return getBadRequestResponse("voucher value not valid");
+                return getBadRequestResponse(String.format("voucher value is greather than the user balance (%f > %f)",
+                                             voucher.getValue(),
+                                             user.getBalance()));
             }
         } else {
             return getNotFoundResponse(String.format("cannot find user with fiscal code '%s'", fiscalCode));
@@ -277,8 +297,9 @@ public class UserResource {
                                           @PathParam("voucherId") int voucherId, Voucher newVoucher) {
         User user;
 
-        if (!areVoucherAttributesValid(newVoucher)) {
-            return getBadRequestResponse("new voucher attributes are not valid");
+        List<String> invalidAttributes = getInvalidVoucherAttributes(newVoucher);
+        if (invalidAttributes.size() > 0) {
+            return getBadRequestResponse("voucher attributes not valid (" + invalidAttributes + ")");
         }
 
         lock.writeLock().lock();
@@ -293,29 +314,18 @@ public class UserResource {
                     return getNotFoundResponse(String.format("cannot find voucher with ID '%d' in user '%s'", voucherId, fiscalCode));
                 }
 
-                if (!isModifyVoucherValid(originalVoucher, newVoucher, user)) {
-                    return getBadRequestResponse("new voucher values are not valid");
-                }
-
-                if (newVoucher.getValue() != originalVoucher.getValue()) {
-                    return getBadRequestResponse("voucher value can't be changed");
+                List<String> invalidChanges = getNewVoucherInvalidChanges(originalVoucher, newVoucher, user);
+                if (invalidChanges.size() > 0) {
+                    return getBadRequestResponse(String.format("invalid requests (" + invalidChanges + ")"));
                 }
 
                 if (!originalVoucher.getType().equals(newVoucher.getType())) {
-                    if (!originalVoucher.isConsumed()) {
-                        originalVoucher.setType(newVoucher.getType());
-                    } else {
-                        return getBadRequestResponse("cannot change voucher type if the voucher has been consumed");
-                    }
+                    originalVoucher.setType(newVoucher.getType());
                 }
                 
                 if (!originalVoucher.isConsumed() && newVoucher.isConsumed()) {
-                    if (newVoucher.getConsumedDateTime() != null) {
-                        originalVoucher.setConsumed(newVoucher.isConsumed());
-                        originalVoucher.setConsumedDateTime(newVoucher.getConsumedDateTime());
-                    } else {
-                        return getBadRequestResponse("missing consumedDateTime attribute");
-                    }
+                    originalVoucher.setConsumed(newVoucher.isConsumed());
+                    originalVoucher.setConsumedDateTime(newVoucher.getConsumedDateTime());
                 }
 
                 userDao.modifyUserVoucher(originalVoucher, user);
@@ -345,7 +355,7 @@ public class UserResource {
                         userDao.deleteUserVoucher(voucher, user);
                         return Response.ok().build();
                     } else {
-                        return getBadRequestResponse("cannot delete used voucher");
+                        return getBadRequestResponse("cannot delete used voucher because it has already been consumed");
                     }
                 } else {
                     return getNotFoundResponse(String.format("cannot find voucher with ID '%d' in user '%s'", voucherId, fiscalCode));
@@ -395,15 +405,24 @@ public class UserResource {
      * @param voucher
      * @return boolean
      */
-    private boolean areVoucherAttributesValid(Voucher voucher) {
-        if (voucher.getType() == null) {
-            return false;
+    private List<String> getInvalidVoucherAttributes(Voucher voucher) {
+        List<String> invalidAttributes = new ArrayList<String>();
+
+        Map<String, String> valuesToCheckAreNotNull = new HashMap<String, String>();
+        valuesToCheckAreNotNull.put("type", voucher.getType());
+        valuesToCheckAreNotNull.put("createdDateTime", voucher.getCreatedDateTime());
+        
+        for (Map.Entry<String, String> entry : valuesToCheckAreNotNull.entrySet()) {
+            if (entry.getValue() == null) {
+                invalidAttributes.add(entry.getKey());
+            }
         }
+        
         if (voucher.getValue() <= 0) {
-            return false;
+            invalidAttributes.add("value");
         }
-        if (voucher.getCreatedDateTime() == null || !isDateTimeCorrect(voucher.getCreatedDateTime())) {
-            return false;
+        if (!isDateTimeCorrect(voucher.getCreatedDateTime())) {
+            invalidAttributes.add("createdDateTime");
         }
         
         // Finally I check if the given voucher type is in the valid ones
@@ -414,7 +433,11 @@ public class UserResource {
             }
         }
 
-        return isVoucherTypeValid;
+        if (!isVoucherTypeValid) {
+            invalidAttributes.add("type");
+        }
+
+        return invalidAttributes;
     }
 
     /**
@@ -425,7 +448,9 @@ public class UserResource {
      * @param user
      * @return boolean
      */
-    boolean isModifyVoucherValid(Voucher originalVoucher, Voucher newVoucher, User user) {
+    List<String> getNewVoucherInvalidChanges(Voucher originalVoucher, Voucher newVoucher, User user) {
+        List<String> invalidChanges = new ArrayList<String>();
+        
         // FIXME pretty orrible
         boolean wantsToBecomeUnconsumed = (originalVoucher.isConsumed() && !newVoucher.isConsumed());
         boolean createdDateHasChanged = (originalVoucher.getCreatedDateTime() != null && newVoucher.getCreatedDateTime() != null && !newVoucher.getCreatedDateTime().equals(originalVoucher.getCreatedDateTime()));
@@ -433,25 +458,37 @@ public class UserResource {
 
         // The voucher cannot become unconsumed if it is consumed
         if (originalVoucher.isConsumed() && wantsToBecomeUnconsumed) {
-            return false;
+            invalidChanges.add("cannot change voucher 'consumed' if it has already been consumed");
         }
 
         // The created date can't be changed
         if (createdDateHasChanged) {
-            return false;
+            invalidChanges.add("createdDateTime cannot be changed");
         }
 
         // If the consumed date is set it can't be changed
         if (consumedDateHasChanged) {
-            return false;
+            invalidChanges.add("consumedDateTime cannot be changed");
         }
 
         // If the new voucher has a consumed date but it's not consumed, it is not valid
         if (!newVoucher.isConsumed() && newVoucher.getConsumedDateTime() != null) {
-            return false;
+            invalidChanges.add("consumedDateTime can only be set if voucher becomes consumed");
         }
 
-        return true;
+        if (newVoucher.getValue() != originalVoucher.getValue()) {
+            invalidChanges.add("cannot change voucher value");
+        }
+
+        if (!originalVoucher.isConsumed() && newVoucher.isConsumed() && newVoucher.getConsumedDateTime() == null) {
+            invalidChanges.add("consumedDateTime cannot be null if voucher becomes consumed");
+        }
+
+        if (!originalVoucher.getType().equals(newVoucher.getType()) && originalVoucher.isConsumed()) {
+            invalidChanges.add("cannot change voucher type if voucher has been consumed");
+        }
+
+        return invalidChanges;
     }
 
     private Response getBadRequestResponse(String errorMessage) {
