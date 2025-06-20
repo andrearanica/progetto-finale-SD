@@ -25,14 +25,14 @@
     </div>
     </div>
 
-    <div class="content" style="color: white; font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">
+    <div class="content" style="color: white; font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif">
       <h1 class="ribbon">CARTA CULTURA GIOVANI</h1>
       <h1 style="font-family:'Franklin Gothic Medium', 
       'Arial Narrow', Arial, sans-serif; font-size:xx-large; display: flex; 
       justify-content: center; align-items: center; height: 10vh;">INSERISCI NUOVO BONUS</h1>
       <form method="post" id="voucherForm">
-      </br>Inserisci importo: <textarea name="importo" id="importo" cols="30" rows="1">Inserisci importo (in euro)</textarea>
-      </br>Inserisci tipologia del bene acquistato: <select name="cars" id="cars">
+      </br>Inserisci importo: <input type="number" name="importo" id="importo" min="1" placeholder="Inserisci importo (in euro)">
+      </br>Inserisci tipologia del bene acquistato: <select name="tipologia" id="tipologia" type="text">
         <option value="cinema">Cinema</option>
         <option value="musica">Musica</option>
         <option value="concerti" selected>Concerti</option>
@@ -46,12 +46,11 @@
       </br><button type="submit">Invia</button>
       </form>
     </div>
-  
+
     <script>
+    window.onload = init;
 
-      window.onload = init();
-
-      async function init() {
+    async function init() {
       document.getElementById('voucherForm').onsubmit = async function(e) {
         e.preventDefault();
 
@@ -64,9 +63,50 @@
           return;
         }
 
+        // Recupera l'utente per controllare il balance
+        const userRes = await fetch(`http://localhost:8080/users/${fiscalCode}`);
+        if (!userRes.ok) {
+          alert('Errore nel recupero dell\'utente!');
+          return;
+        }
+        const user = await userRes.json();
+
+        if (user.balance < importo) {
+          alert('Saldo insufficiente per creare il buono!');
+          return;
+        }
+
+        // Aggiorna il balance dell'utente
+        user.balance = user.balance - importo;
+        const updateRes = await fetch(`http://localhost:8080/users/${fiscalCode}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(user)
+        });
+        if (!updateRes.ok) {
+          const errorText = await updateRes.text();
+          alert('Errore nell\'aggiornamento del saldo:\n' + errorText);
+          return;
+        }
+
+
+        // Recupera tutti i voucher dell'utente per trovare l'ultimo id
+        const vouchersRes = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers`);
+        let newId = 0;
+        if (vouchersRes.ok) {
+          const vouchers = await vouchersRes.json();
+          if (Array.isArray(vouchers) && vouchers.length > 0) {
+            // Trova il massimo id e aggiungi 1
+            newId = Math.max(...vouchers.map(v => v.id)) + 1;
+          }
+        }
+
         const voucher = {
+          createdDateTime: new Date().toISOString(),
+          id: newId,
           value: importo,
-          type: tipologia
+          type: tipologia,
+          consumed: false,
         };
 
         const res = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers`, {
