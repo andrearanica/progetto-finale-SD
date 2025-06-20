@@ -29,23 +29,73 @@
       <h1 class="ribbon">CARTA CULTURA GIOVANI</h1>
       <h1 style="font-family:'Franklin Gothic Medium', 
       'Arial Narrow', Arial, sans-serif; font-size:xx-large; display: flex; 
-      justify-content: center; align-items: center; height: 20vh;">HOME</br>
+      justify-content: center; align-items: center; height: 20vh;">HOME:</br>
       BENVENUTI SUL NOSTRO SITO!</br></br>STATISTICHE GLOBALI:</h1>
-      </br><p>Numero di utenti registrati: </p>
-      </br><p>Somma dei contributi di tutti gli utenti: </p>
-      </br><p>Somma dei buoni generati dagli utenti: </p>
+      </br><p>NUMERO DI UTENTI REGISTRATI: </p>
+      </br><p>SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione disponibile): </p>
+      <p>SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione assegnata ancora non spesa): </p>
+      <p>SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione spesa): </p>
+      </br><p>SOMMA DEI BUONI GENERATI DA TUTTI GLI UTENTI (non consumati): </p>
+      <p>SOMMA DEI BUONI GENERATI DA TUTTI GLI UTENTI (consumati): </p>
     </div>
   
     <script>
-      const API_URI = "http://localhost:8080";
-
-      window.onload = init();
+      window.onload = init;
 
       async function init() {
-        // Iniziare qui.
-      }
+        try {
+          const usersRes = await fetch("http://localhost:8080/users");
+          const users = await usersRes.json();
 
+          // Numero utenti
+          const numUtenti = users.length;
+
+          // Porzione disponibile (balance)
+          const sommaDisponibile = users.reduce((sum, user) => sum + (user.balance || 0), 0);
+
+          // Variabili per i buoni
+          let sommaAssegnataNonSpesa = 0;
+          let sommaSpesa = 0;
+          let sommaBuoniNonConsumati = 0;
+          let sommaBuoniConsumati = 0;
+
+          users.forEach(user => {
+            if (user.vouchers && Array.isArray(user.vouchers)) {
+              user.vouchers.forEach(voucher => {
+                if (voucher.consumed) {
+                  sommaBuoniConsumati += 1;
+                  sommaSpesa += voucher.value;
+                } else {
+                  sommaBuoniNonConsumati += 1;
+                  sommaAssegnataNonSpesa += voucher.value;
+                }
+              });
+            }
+          });
+
+          // Aggiorna i <p> nella pagina
+          const ps = document.querySelectorAll('.content p');
+          if (ps.length >= 6) {
+            ps[0].innerHTML = `NUMERO DI UTENTI REGISTRATI: <b>${numUtenti}</b>`;
+            ps[1].innerHTML = `SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione disponibile): <b>${sommaDisponibile} €</b>`;
+            ps[2].innerHTML = `SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione assegnata ancora non spesa): <b>${sommaAssegnataNonSpesa} €</b>`;
+            ps[3].innerHTML = `SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione spesa): <b>${sommaSpesa} €</b>`;
+            ps[4].innerHTML = `SOMMA DEI BUONI GENERATI DA TUTTI GLI UTENTI (non consumati): <b>${sommaBuoniNonConsumati}</b>`;
+            ps[5].innerHTML = `SOMMA DEI BUONI GENERATI DA TUTTI GLI UTENTI (consumati): <b>${sommaBuoniConsumati}</b>`;
+          }
+        } catch (error) {
+          console.error("Errore nel caricamento delle statistiche:", error);
+          const ps = document.querySelectorAll('.content p');
+          if (ps.length >= 6) {
+            ps[0].innerHTML = "Errore nel caricamento utenti.";
+            ps[1].innerHTML = "Errore nel caricamento contributi disponibili.";
+            ps[2].innerHTML = "Errore nel caricamento contributi assegnati.";
+            ps[3].innerHTML = "Errore nel caricamento contributi spesi.";
+            ps[4].innerHTML = "Errore nel caricamento buoni non consumati.";
+            ps[5].innerHTML = "Errore nel caricamento buoni consumati.";
+          }
+        }
+      }
     </script>
   </body>
-
 </html>
