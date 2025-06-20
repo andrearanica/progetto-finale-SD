@@ -30,10 +30,10 @@
       <h1 style="font-family:'Franklin Gothic Medium', 
       'Arial Narrow', Arial, sans-serif; font-size:xx-large; display: flex; 
       justify-content: center; align-items: center; height: 10vh;">ELENCO BUONI GENERATI</h1>
-      Saldo di contributo disponibile: 
-      </br>Quantità di contributo spesa in buoni consumati:
-      </br>Quantità di contributo spesa in buoni ancora non consumati:
-      </br></br>
+      <p>Saldo di contributo disponibile: </p>
+      <p>Quantità di contributo spesa in buoni consumati:</p>
+      <p>Quantità di contributo spesa in buoni ancora non consumati:</p>
+      </br>
       <table class="order-table">
         <thead>
             <tr>
@@ -48,7 +48,83 @@
     </div>
   
     <script>
+      window.onload = init;
+
+      async function init() {
+        try {
+
+          // Recupera il fiscalCode dalla sessione
+          const fiscalCode = sessionStorage.getItem('sessionToken');
+
+          // Fetch all'utente autenticato
+          const userRes = await fetch(`http://localhost:8080/users/${fiscalCode}`);
+          const user = await userRes.json();
+
+          // Inizializza buoni
+          const saldoContrDisp = user.balance;
+          let spesaBuoniConsumati = 0;
+          let spesaBuoniNonConsumati = 0;
+
+          if (user.vouchers && Array.isArray(user.vouchers)) {
+              user.vouchers.forEach(voucher => {
+                if (voucher.consumed) {
+                  spesaBuoniConsumati += voucher.value;
+                } else {
+                  spesaBuoniNonConsumati += voucher.value;
+                }
+              });
+          }
+
+          // Aggiorna i <p> nella pagina
+          const ps = document.querySelectorAll('.content p');
+          if (ps.length >= 3) {
+            ps[0].innerHTML = `Saldo di contributo disponibile: <b>${saldoContrDisp} €</b>`;
+            ps[1].innerHTML = `Quantità di contributo spesa in buoni consumati: <b>${spesaBuoniConsumati} €</b>`;
+            ps[2].innerHTML = `Quantità di contributo spesa in buoni ancora non consumati: <b>${spesaBuoniNonConsumati} €</b>`;
+          }
+
+          if (user.vouchers && Array.isArray(user.vouchers)) {
+            // Ordina i buoni per data di creazione (dal più recente)
+            user.vouchers.sort((a, b) => {
+              // Assumendo formato "DD/MM/YYYY HH:mm:ss"
+              const parseDate = s => {
+                const [d, m, yAndTime] = s.split('/');
+                const [y, time] = yAndTime.split(' ');
+                return new Date(`${y}-${m}-${d}T${time || '00:00:00'}`);
+              };
+              return parseDate(b.createdDateTime) - parseDate(a.createdDateTime);
+            });
+
+            const tbody = document.querySelector('.order-table tbody');
+            tbody.innerHTML = ""; // Svuota la tabella
+
+            user.vouchers.forEach(voucher => {
+              const tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${voucher.value} €</td>
+                <td>${voucher.consumed ? "Consumato" : "Non consumato"}</td>
+                <td>${voucher.type}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+        } catch (error) {
+          console.error("Errore nel caricamento delle statistiche:", error);
+          const ps = document.querySelectorAll('.content p');
+          if (ps.length >= 3) {
+            ps[0].innerHTML = "Errore nel caricamento saldo contributo disponibile.";
+            ps[1].innerHTML = "Errore nel caricamento spesa in buoni consumati.";
+            ps[2].innerHTML = "Errore nel caricamento spesa in buoni ancora non consumati.";
+          }
+          
+          // Mostra errore anche nella tabella
+          const tbody = document.querySelector('.order-table tbody');
+          if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="3" style="color:red;">Errore nel caricamento dei buoni.</td></tr>`;
+          }
+        }
+      }
+
     </script>
   </body>
-
 </html>
