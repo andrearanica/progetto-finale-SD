@@ -30,7 +30,7 @@
       <h1 style="font-family:'Franklin Gothic Medium', 
       'Arial Narrow', Arial, sans-serif; font-size:xx-large; display: flex; 
       justify-content: center; align-items: center; height: 10vh;">INSERISCI NUOVO BONUS</h1>
-      <form action="/submit" method="post">
+      <form method="post" id="voucherForm">
       </br>Inserisci importo: <textarea name="importo" id="importo" cols="30" rows="1">Inserisci importo (in euro)</textarea>
       </br>Inserisci tipologia del bene acquistato: <select name="cars" id="cars">
         <option value="cinema">Cinema</option>
@@ -48,13 +48,43 @@
     </div>
   
     <script>
-      const API_URI = "http://localhost:8080";
 
       window.onload = init();
 
       async function init() {
-        // Iniziare qui.
-      }
+      document.getElementById('voucherForm').onsubmit = async function(e) {
+        e.preventDefault();
+
+        const importo = parseFloat(document.getElementById('importo').value);
+        const tipologia = document.getElementById('tipologia').value;
+        const fiscalCode = sessionStorage.getItem('sessionToken');
+
+        if (isNaN(importo) || importo <= 0) {
+          alert('Inserisci un importo valido!');
+          return;
+        }
+
+        const voucher = {
+          value: importo,
+          type: tipologia
+        };
+
+        const res = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(voucher)
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          alert('Errore nella creazione del buono:\n' + errorText);
+          return;
+        }
+
+        alert('Buono creato con successo!');
+        window.location.href = '../elenco-buoni-generati/elencoBuoni.html';
+      };
+    }
 
     </script>
   </body>
