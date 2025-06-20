@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dettaglio Buono - Carta Cultura Giovani</title>
+  </head>
+  <body data-server-no-reload style="background-color: #1477bd;">
+    <link rel="stylesheet" href="../stato-globale-sistema/home.css">
+    <div id="menuArea">
+      <input type="checkbox" id="menuToggle"></input>
+    
+    <label for="menuToggle" class="menuOpen">
+      <div class="open"></div>
+    </label>
+    
+    <div class="menu menuEffects">
+      <label for="menuToggle"></label>
+      <div class="menuContent">
+        <ul>
+          <li><a href="../stato-globale-sistema/home.html">HOME</a></li>
+          <li><a href="../inserisci-buono/inserisciBuono.html">INSERISCI BUONO</a></li>
+          <li><a href="../elenco-buoni-generati/elencoBuoni.html">ELENCO BUONI GENERATI</a></li>
+          <li><a href="../index.html">ESCI</a></li>
+        </ul>
+      </div>
+    </div>
+    </div>
+
+    <div class="content" style="color: white; font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">
+      <h1 class="ribbon">CARTA CULTURA GIOVANI</h1>
+      <h1 style="font-family:'Franklin Gothic Medium', 
+      'Arial Narrow', Arial, sans-serif; font-size:xx-large; display: flex; 
+      justify-content: center; align-items: center; height: 10vh;">DETTAGLIO BUONO</h1>
+      <p>Importo in euro: </p>
+      <p>Tipologia di bene acquistato:</p>
+      <p>Stato:</p>
+      <p>Data di creazione: </p>
+      <p></p>
+      </br>
+      <button id="deleteBtn" style="display:none; background-color:#e74c3c; color:white; border:none; padding:10px; margin-right:10px; border-radius:5px; cursor:pointer;">Cancella buono</button>
+      <button id="consumeBtn" style="background-color:#27ae60; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">Consuma buono</button>
+    </div>
+  
+    <script>
+        window.onload = init;
+
+        async function init() {
+            try {
+
+                //Recupera il voucherId
+                const params = new URLSearchParams(window.location.search);
+                const voucherId = params.get('id');
+
+                // Recupera il fiscalCode dalla sessione
+                const fiscalCode = sessionStorage.getItem('sessionToken');
+
+                // Fetch al voucher selezionato
+                const voucherRes = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers/${voucherId}`);
+                const voucher = await voucherRes.json();
+
+                // Aggiorna i <p> nella pagina
+                const ps = document.querySelectorAll('.content p');
+                if (ps.length >= 4) {
+                    ps[0].innerHTML = `Importo in euro: <b>${voucher.value} €</b>`;
+                    ps[1].innerHTML = `Tipologia di bene acquistato: <b>${voucher.type} </b>`;
+                    ps[2].innerHTML = `Stato: <b>${voucher.consumed ? "Consumato" : "Non consumato"} </b>`;
+                    ps[3].innerHTML = `Data di creazione: <b>${voucher.createdDateTime} </b>`;
+                    if (voucher.consumed) {
+                        ps[4].innerHTML = `Data di consumo: <b>${voucher.consumedDateTime} </b>`;
+                        document.getElementById('consumeBtn').style.display = 'none';
+                        document.getElementById('deleteBtn').style.display = 'none';
+                    } else {
+                        document.getElementById('consumeBtn').style.display = 'inline-block';
+                        document.getElementById('deleteBtn').style.display = 'inline-block';
+                    }
+                }
+
+                // Event listener per cancellare il buono
+                document.getElementById('deleteBtn').onclick = async function() {
+                    if (confirm('Sei sicuro di voler cancellare il buono?')) {
+                        // Recupera l'utente
+                        const userRes = await fetch(`http://localhost:8080/users/${fiscalCode}`);
+                        const user = await userRes.json();
+                        const nuovoBalance = user.balance + voucher.value;
+                        const updatedBalance = {
+                            ...user,
+                            balance: nuovoBalance
+                        };
+
+                        // Aggiorna il balance utente nel backend
+                        const res1 = await fetch(`http://localhost:8080/users/${fiscalCode}`, {
+                            method: 'PUT', 
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(updatedBalance)
+                        });
+                        if (!res1.ok) {
+                            const errorText = await res1.text();
+                            alert('Errore nel cancellare il buono!\n' + errorText);
+                            return;
+                        }
+
+                        // Cancella il buono
+                        const res2 = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers/${voucherId}`, {
+                            method: 'DELETE'
+                        });
+                        if (!res2.ok) {
+                            const errorText = await res2.text();
+                            alert('Errore nel cancellare il buono!\n' + errorText);
+                            return;
+                        }
+                        alert('Buono cancellato e balance aggiornato!');
+                        window.location.href = '../elenco-buoni-generati/elencoBuoni.html';
+                    }
+                };
+
+                // Event listener per consumare il buono
+                document.getElementById('consumeBtn').onclick = async function() {
+                    if (confirm('Vuoi consumare questo buono?')) {
+                        // Aggiorna il campo consumed e consumedDateTime
+                        const updatedVoucher = {
+                            ...voucher,
+                            consumed: true,
+                            consumedDateTime: new Date().toISOString() 
+                        };
+
+                        const res = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers/${voucherId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(updatedVoucher)
+                        });
+                        if (!res.ok) {
+                            const errorText = await res.text();
+                            alert('Errore nel consumare il buono!\n' + errorText);
+                            return;
+                        }
+                        alert('Buono consumato con successo!');
+                        window.location.reload();
+                    }
+                };
+
+            } catch (error) {
+            }
+        }
+    </script>
+  </body>
+</html>

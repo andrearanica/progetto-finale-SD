@@ -40,6 +40,7 @@
                 <th>Importo</th>
                 <th>Stato</th>
                 <th>Tipologia di bene assegnato</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
@@ -104,6 +105,11 @@
                 <td>${voucher.value} €</td>
                 <td>${voucher.consumed ? "Consumato" : "Non consumato"}</td>
                 <td>${voucher.type}</td>
+                <td>
+                  <button onclick="window.location.href='../dettaglio-buono/dettaglioBuono.html?id=${voucher.id}'">
+                    Dettaglio
+                  </button>
+                </td>
               `;
               tbody.appendChild(tr);
             });
@@ -116,7 +122,7 @@
             ps[1].innerHTML = "Errore nel caricamento spesa in buoni consumati.";
             ps[2].innerHTML = "Errore nel caricamento spesa in buoni ancora non consumati.";
           }
-          
+
           // Mostra errore anche nella tabella
           const tbody = document.querySelector('.order-table tbody');
           if (tbody) {
