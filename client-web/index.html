@@ -140,7 +140,7 @@
           sessionStorage.setItem('sessionToken', fiscalCode);
 
           setTimeout(() => {
-            window.location.replace('/stato-globale-sistema/home.html');
+            window.location.replace('stato-globale-sistema/home.html');
           }, 500);
           resetRegistrationForm();
 
@@ -168,7 +168,7 @@
 
           // Se l'utente esiste, procedi
           sessionStorage.setItem('sessionToken', fiscalCode);
-          window.location.replace('/stato-globale-sistema/home.html');
+          window.location.replace('stato-globale-sistema/home.html');
           resetLoginForm();
         } catch (error) {
           console.error('Errore:', error.message);
