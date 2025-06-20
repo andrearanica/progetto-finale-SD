@@ -1,6 +1,6 @@
-package it.unimib.sd2025.resources;
+package it.unimib.sd2025.exceptions;
 
-import jakarta.ws.rs.ProcessingException;
+import jakarta.json.bind.JsonbException;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import jakarta.ws.rs.ext.ExceptionMapper;
@@ -17,8 +17,8 @@ import jakarta.ws.rs.ext.Provider;
  * L'annotazione "@Provider" serve a far registrare la mappatura in automatico in JAX-RS.
  */
 @Provider
-public class JsonParsingException implements ExceptionMapper<ProcessingException> {
-  public Response toResponse(ProcessingException ex) {
+public class JsonException implements ExceptionMapper<JsonbException> {
+  public Response toResponse(JsonbException ex) {
     return Response.status(Status.BAD_REQUEST).entity(ex.getMessage()).type("text/plain").build();
   }
 }

@@ -122,7 +122,7 @@ N.B. Le date seguono il formato `GG/MM/YYYY hh:mm:ss`.
 **Header**: nessuno.
 
 **Risposta**: la rappresentazione di un oggetto `Voucher`, che ha come campi `id`, `type`, `value`, 
-`consumed`, `createdDate` e `consumedDate` (se `consumed` è `true`).
+`consumed`, `createdDateTime` e `consumedDateTime` (se `consumed` è `true`).
 
 **Codici di stato restituiti**: 
 * `200 OK`
