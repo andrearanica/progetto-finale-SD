@@ -293,6 +293,13 @@ public class UserService {
                 throw new InvalidDeleteVoucherException(fiscalCode, voucherId);
             }
             userDao.deleteUserVoucher(voucher, user);
+
+            user.getVouchers().remove(voucher);
+            user.setBalance(START_BALANCE);
+            for (Voucher v : user.getVouchers()) {
+                user.setBalance(user.getBalance() - v.getValue());
+            }
+            userDao.modifyUser(user);
         } finally {
             lock.writeLock().unlock();
         }
