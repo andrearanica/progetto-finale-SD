@@ -433,17 +433,17 @@ public class UserService {
         if (originalVoucher.isConsumed() && !newVoucher.isConsumed()) {
             invalidChanges.add("cannot change voucher 'consumed' if it has already been consumed");
         }
-
-        if (newVoucher.getConsumedDateTime() != null && newVoucher.isConsumed() && !isDateTimeCorrect(newVoucher.getConsumedDateTime())) {
-            invalidChanges.add("new voucher attribute 'consumedDateTime' is not correct");
-        }
-
+        
         if (createdDateHasChanged) {
             invalidChanges.add("'createdDateTime' cannot be changed");
         }
-
+        
         if (consumedDateHasChanged) {
             invalidChanges.add("'consumedDateTime' cannot be changed");
+        }
+        
+        if (newVoucher.getConsumedDateTime() != null && newVoucher.isConsumed() && !isDateTimeCorrect(newVoucher.getConsumedDateTime())) {
+            invalidChanges.add("new voucher attribute 'consumedDateTime' is not correct");
         }
 
         if (newVoucher.getValue() != originalVoucher.getValue()) {
