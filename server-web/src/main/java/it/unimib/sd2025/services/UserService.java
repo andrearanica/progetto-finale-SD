@@ -10,6 +10,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Date;
 
 import it.unimib.sd2025.db.IUserDao;
 import it.unimib.sd2025.models.User;
@@ -322,11 +323,19 @@ public class UserService {
 
         if (!invalidAttributes.contains("email")) {
             Pattern pattern = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}");
-            Matcher mat = pattern.matcher(user.getEmail());
+            Matcher matcher = pattern.matcher(user.getEmail());
     
-            if (!mat.find()) {
+            if (!matcher.find()) {
                 invalidAttributes.add("email");
             }    
+        }
+
+        if (!invalidAttributes.contains("fiscalCode")) {
+            Pattern pattern = Pattern.compile("[A-Z][A-Z][A-Z][A-Z][A-Z][A-Z][0-9][0-9][A-Z][0-9][0-9][A-Z][0-9][0-9][0-9][A-Z]");
+            Matcher matcher = pattern.matcher(user.getFiscalCode());
+            if (!matcher.find()) {
+                invalidAttributes.add("fiscalCode");
+            }
         }
         
         return invalidAttributes;
@@ -394,7 +403,10 @@ public class UserService {
         dateFormat.setLenient(false);
 
         try {
-            dateFormat.parse(dateTime.trim());
+            Date date = dateFormat.parse(dateTime.trim());
+            if (date.after(new Date())) {
+                return false;
+            }
         } catch (ParseException e) {
             return false;
         }
@@ -420,6 +432,10 @@ public class UserService {
 
         if (originalVoucher.isConsumed() && !newVoucher.isConsumed()) {
             invalidChanges.add("cannot change voucher 'consumed' if it has already been consumed");
+        }
+
+        if (newVoucher.getConsumedDateTime() != null && newVoucher.isConsumed() && !isDateTimeCorrect(newVoucher.getConsumedDateTime())) {
+            invalidChanges.add("new voucher attribute 'consumedDateTime' is not correct");
         }
 
         if (createdDateHasChanged) {
