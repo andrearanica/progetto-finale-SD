@@ -27,8 +27,8 @@ public class UserService {
     private IUserDao userDao;
     private final float START_BALANCE = 500;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    private final String[] voucherTypes = {"cinema", "musica", "concerti", "eventi", "culturali", 
-                                           "libri", "musei", "strumenti musicali", "teatro", 
+    private final String[] voucherTypes = {"cinema", "musica", "concerti", "eventi culturali", 
+                                           "libri", "musei", "strumenti musicali", "teatro",
                                            "danza"};
 
     public UserService(IUserDao userDao) {
@@ -60,7 +60,7 @@ public class UserService {
         lock.writeLock().lock();
         try {
             if (!isFiscalCodeUnique(user.getFiscalCode())) {
-                throw new InvalidUserException(String.format("fiscal code '%s' is already used", 
+                throw new InvalidUserException(String.format("fiscal code '%s' is already used",
                                                              user.getFiscalCode()));
             }
             userDao.addUser(user);
@@ -69,7 +69,7 @@ public class UserService {
         }
     }
 
-    public User getUserByFiscalCode(String fiscalCode) 
+    public User getUserByFiscalCode(String fiscalCode)
                 throws UserNotFoundException {
         User user = null;
 
@@ -90,7 +90,7 @@ public class UserService {
     public User modifyUserByFiscalCode(String fiscalCode, User user)
                 throws InvalidModifyUserException, UserNotFoundException {
         User userToModify = null;
-        
+
         lock.writeLock().lock();
 
         try {
@@ -104,10 +104,10 @@ public class UserService {
             fieldsToCheck.put("name", user.getName());
             fieldsToCheck.put("surname", user.getSurname());
             fieldsToCheck.put("email", user.getEmail());
-            
+
             for (Map.Entry<String, String> entry : fieldsToCheck.entrySet()) {
                 if (entry.getValue() == null) {
-                    throw new InvalidModifyUserException(String.format("'%s' cannot be 'null'", 
+                    throw new InvalidModifyUserException(String.format("'%s' cannot be 'null'",
                                                                        entry.getKey()));
                 }
             }
@@ -115,7 +115,7 @@ public class UserService {
             userToModify.setName(user.getName());
             userToModify.setSurname(user.getSurname());
             userToModify.setEmail(user.getEmail());
-    
+
             userDao.modifyUser(userToModify);
 
             return userToModify;
@@ -141,7 +141,7 @@ public class UserService {
         return user.getVouchers();
     }
 
-    public Voucher addVoucherToUser(String fiscalCode, Voucher voucher) 
+    public Voucher addVoucherToUser(String fiscalCode, Voucher voucher)
                    throws UserNotFoundException, InvalidVoucherException {
         User user = null;
 
@@ -162,7 +162,7 @@ public class UserService {
 
         List<String> invalidAttributes = getInvalidVoucherAttributes(voucher);
         if (invalidAttributes.size() > 0) {
-            throw new InvalidVoucherException(String.format("Invalid attribute '%s'", 
+            throw new InvalidVoucherException(String.format("Invalid attribute '%s'",
                                                             invalidAttributes.get(0)));
         }
 
@@ -180,7 +180,7 @@ public class UserService {
 
                 user.setBalance(user.getBalance() - voucher.getValue());
                 userDao.addVoucherToUser(voucher, user);
-                
+
                 userDao.modifyUser(user);
             } finally {
                 lock.writeLock().unlock();
@@ -195,7 +195,7 @@ public class UserService {
         }
     }
 
-    public Voucher getUserVoucherById(String fiscalCode, int voucherId) 
+    public Voucher getUserVoucherById(String fiscalCode, int voucherId)
                    throws UserNotFoundException, VoucherNotFoundException {
         User user;
 
@@ -228,7 +228,7 @@ public class UserService {
     public Voucher modifyUserVoucherById(String fiscalCode, int voucherId, Voucher newVoucher)
                    throws UserNotFoundException, VoucherNotFoundException, InvalidVoucherException,
                    InvalidModifyVoucherException {
-        
+
         List<String> invalidAttributes = getInvalidVoucherAttributes(newVoucher);
         if (invalidAttributes.size() > 0) {
             String errorMessage = String.format("New voucher attribute '%s' is not valid",
@@ -251,7 +251,7 @@ public class UserService {
                 throw new VoucherNotFoundException(fiscalCode, voucherId);
             }
 
-            List<String> invalidChanges = getNewVoucherInvalidChanges(originalVoucher, newVoucher, 
+            List<String> invalidChanges = getNewVoucherInvalidChanges(originalVoucher, newVoucher,
                                                                       user);
             if (invalidChanges.size() > 0) {
                 throw new InvalidModifyVoucherException(invalidChanges.get(0));
@@ -260,7 +260,7 @@ public class UserService {
             if (!originalVoucher.getType().equals(newVoucher.getType())) {
                 originalVoucher.setType(newVoucher.getType());
             }
-            
+
             if (!originalVoucher.isConsumed() && newVoucher.isConsumed()) {
                 originalVoucher.setConsumed(newVoucher.isConsumed());
                 originalVoucher.setConsumedDateTime(newVoucher.getConsumedDateTime());
@@ -274,8 +274,8 @@ public class UserService {
         }
     }
 
-    public void deleteUserVoucherById(String fiscalCode, int voucherId) 
-                throws UserNotFoundException, VoucherNotFoundException, 
+    public void deleteUserVoucherById(String fiscalCode, int voucherId)
+                throws UserNotFoundException, VoucherNotFoundException,
                        InvalidDeleteVoucherException {
         lock.writeLock().lock();
         try {
@@ -283,13 +283,13 @@ public class UserService {
             if (user == null) {
                 throw new UserNotFoundException(fiscalCode);
             }
-            
+
             Voucher voucher;
             voucher = findUserVoucherById(user, voucherId);
             if (voucher == null) {
                 throw new VoucherNotFoundException(fiscalCode, voucherId);
             }
-        
+
             if (voucher.isConsumed()) {
                 throw new InvalidDeleteVoucherException(fiscalCode, voucherId);
             }
@@ -314,7 +314,7 @@ public class UserService {
         valuesToCheckAreNotNull.put("name", user.getName());
         valuesToCheckAreNotNull.put("surname", user.getSurname());
         valuesToCheckAreNotNull.put("email", user.getEmail());
-        
+
         for (Map.Entry<String, String> entry : valuesToCheckAreNotNull.entrySet()) {
             if (entry.getValue() == null) {
                 invalidAttributes.add(entry.getKey());
@@ -324,10 +324,10 @@ public class UserService {
         if (!invalidAttributes.contains("email")) {
             Pattern pattern = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,4}");
             Matcher matcher = pattern.matcher(user.getEmail());
-    
+
             if (!matcher.find()) {
                 invalidAttributes.add("email");
-            }    
+            }
         }
 
         if (!invalidAttributes.contains("fiscalCode")) {
@@ -337,7 +337,7 @@ public class UserService {
                 invalidAttributes.add("fiscalCode");
             }
         }
-        
+
         return invalidAttributes;
     }
 
@@ -365,13 +365,13 @@ public class UserService {
         Map<String, String> valuesToCheckAreNotNull = new HashMap<String, String>();
         valuesToCheckAreNotNull.put("type", voucher.getType());
         valuesToCheckAreNotNull.put("createdDateTime", voucher.getCreatedDateTime());
-        
+
         for (Map.Entry<String, String> entry : valuesToCheckAreNotNull.entrySet()) {
             if (entry.getValue() == null) {
                 invalidAttributes.add(entry.getKey());
             }
         }
-        
+
         if (voucher.getValue() <= 0) {
             invalidAttributes.add("value");
         }
@@ -379,9 +379,9 @@ public class UserService {
         if (!invalidAttributes.contains("createdDateTime")) {
             if (!isDateTimeCorrect(voucher.getCreatedDateTime())) {
                 invalidAttributes.add("createdDateTime");
-            }    
+            }
         }
-        
+
         if (!invalidAttributes.contains("type")) {
             boolean isVoucherTypeValid = false;
             for (String voucherType : voucherTypes) {
@@ -389,7 +389,7 @@ public class UserService {
                     isVoucherTypeValid = true;
                 }
             }
-            
+
             if (!isVoucherTypeValid) {
                 invalidAttributes.add("type");
             }
@@ -423,25 +423,25 @@ public class UserService {
         return null;
     }
 
-    List<String> getNewVoucherInvalidChanges(Voucher originalVoucher, Voucher newVoucher, 
+    List<String> getNewVoucherInvalidChanges(Voucher originalVoucher, Voucher newVoucher,
                                              User user) {
         List<String> invalidChanges = new ArrayList<String>();
-        
+
         boolean createdDateHasChanged = (newVoucher.getCreatedDateTime() != null && !newVoucher.getCreatedDateTime().equals(originalVoucher.getCreatedDateTime()));
         boolean consumedDateHasChanged = (originalVoucher.getConsumedDateTime() != null && newVoucher.getConsumedDateTime() != null && !newVoucher.getConsumedDateTime().equals(originalVoucher.getConsumedDateTime()));
 
         if (originalVoucher.isConsumed() && !newVoucher.isConsumed()) {
             invalidChanges.add("cannot change voucher 'consumed' if it has already been consumed");
         }
-        
+
         if (createdDateHasChanged) {
             invalidChanges.add("'createdDateTime' cannot be changed");
         }
-        
+
         if (consumedDateHasChanged) {
             invalidChanges.add("'consumedDateTime' cannot be changed");
         }
-        
+
         if (newVoucher.getConsumedDateTime() != null && newVoucher.isConsumed() && !isDateTimeCorrect(newVoucher.getConsumedDateTime())) {
             invalidChanges.add("new voucher attribute 'consumedDateTime' is not correct");
         }
