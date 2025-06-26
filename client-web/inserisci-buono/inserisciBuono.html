@@ -89,18 +89,34 @@
           return;
         }
 
+        // Funzione che permette di ottenere data e ora correnti
+        function getCustomDateTime() {
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+          const seconds = String(now.getSeconds()).padStart(2, '0');
+          // Formato: yyyy/MM/dd HH:mm:ss
+          return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+        }
+
+        // Definizione di un voucher e dei suoi parametri 
         const voucher = {
           value: importo,
           type: tipologia,
-          createdDateTime: new Date().toISOString() 
+          createdDateTime: getCustomDateTime()
         };
 
+        // Aggiunta del voucher corrispettivo all'utente tramite metodo POST
         const postRes = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(voucher)
         });
 
+        // Se la richiesta non ha 'OK' come risposta l'utente riceve un errore
         if (!postRes.ok) {
           const errorText = await postRes.text();
           alert('Errore nella creazione del buono:\n' + errorText);
@@ -111,8 +127,6 @@
         window.location.href = '../elenco-buoni-generati/elencoBuoni.html';
       };
     }
-
     </script>
   </body>
-
 </html>
