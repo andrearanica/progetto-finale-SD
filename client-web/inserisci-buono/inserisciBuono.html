@@ -89,34 +89,20 @@
           return;
         }
 
-
-        // Recupera tutti i voucher dell'utente per trovare l'ultimo id
-        const vouchersRes = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers`);
-        let newId = 0;
-        if (vouchersRes.ok) {
-          const vouchers = await vouchersRes.json();
-          if (Array.isArray(vouchers) && vouchers.length > 0) {
-            // Trova il massimo id e aggiungi 1
-            newId = Math.max(...vouchers.map(v => v.id)) + 1;
-          }
-        }
-
         const voucher = {
-          createdDateTime: new Date().toISOString(),
-          id: newId,
           value: importo,
           type: tipologia,
-          consumed: false,
+          createdDateTime: new Date().toISOString() 
         };
 
-        const res = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers`, {
+        const postRes = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(voucher)
         });
 
-        if (!res.ok) {
-          const errorText = await res.text();
+        if (!postRes.ok) {
+          const errorText = await postRes.text();
           alert('Errore nella creazione del buono:\n' + errorText);
           return;
         }
