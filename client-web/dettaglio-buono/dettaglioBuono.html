@@ -37,7 +37,24 @@
       <p></p>
       </br>
       <button id="deleteBtn" style="background-color:#e74c3c; color:white; border:none; padding:10px; margin-right:10px; border-radius:5px; cursor:pointer;">Cancella buono</button>
-      <button id="consumeBtn" style="background-color:#27ae60; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">Consuma buono</button>
+      <button id="consumeBtn" style="background-color:#27ae60; color:white; border:none; padding:10px; margin-right:10px; border-radius:5px; cursor:pointer;">Consuma buono</button>
+      <button id="editBtn" style="background-color:#2196f3; color:white; border:none; padding:10px; margin-right:10px; border-radius:5px; cursor:pointer;">Modifica buono</button>
+      <div id="editBox" style="display:none; margin-top:20px; background:#e0f3ff; border:2px solid #2196f3; border-radius:12px; padding:18px; max-width:600px; color:#1a3557;">
+        <label for="newType">Nuova tipologia:</label>
+        <select id="newType" style="margin:0 10px;">
+          <option value="Cinema">Cinema</option>
+          <option value="Musica">Musica</option>
+          <option value="Concerti">Concerti</option>
+          <option value="Eventi Culturali">Eventi Culturali</option>
+          <option value="Libri">Libri</option>
+          <option value="Musei">Musei</option>
+          <option value="Strumenti Musicali">Strumenti Musicali</option>
+          <option value="Teatro">Teatro</option>
+          <option value="Danza">Danza</option>
+        </select>
+        <button id="saveBtn" style="background-color:#2196f3; color:white; border:none; padding:7px 18px; border-radius:5px; cursor:pointer;">Salva</button>
+        <button id="undoBtn" style="background-color:#2196f3; color:white; border:none; padding:7px 18px; border-radius:5px; cursor:pointer; margin-left:10px;">Annulla</button>
+      </div>
     </div>
   
     <script>
@@ -152,6 +169,57 @@
                         window.location.reload();
                     }
                 };
+
+                // Event listener per il bottone modifica
+                document.getElementById('editBtn').onclick = function() {
+                    if (voucher.consumed) {
+                        alert('Errore: Non puoi modificare un buono già consumato!');
+                        return;
+                    } else {
+                      // Mostra il box di modifica
+                      document.getElementById('editBox').style.display = 'block';
+
+                      // Nasconde o disabilita gli altri bottoni
+                      document.getElementById('deleteBtn').style.display = 'none';
+                      document.getElementById('consumeBtn').style.display = 'none';
+                      document.getElementById('editBtn').style.display = 'none';
+
+                      document.getElementById('deleteBtn').disabled = true;
+                      document.getElementById('consumeBtn').disabled = true;
+                      document.getElementById('editBtn').disabled = true;
+
+                      // Event listener per salvare la nuova tipologia
+                      document.getElementById('saveBtn').onclick = async function() {
+                          const newType = document.getElementById('newType').value;
+                          if (newType === voucher.type) {
+                              alert('Seleziona una tipologia diversa per modificare.');
+                              return;
+                          }
+                          // Aggiorna solo la tipologia
+                          const updatedVoucher = {
+                              ...voucher,
+                              type: newType
+                          };
+                          const res = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers/${voucherId}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify(updatedVoucher)
+                          });
+                          if (!res.ok) {
+                              const errorText = await res.text();
+                              alert('Errore nella modifica della tipologia!\n' + errorText);
+                              return;
+                          }
+                          alert('Tipologia modificata con successo!');
+                          window.location.reload();
+                      };
+                      // Event listener per il bottone Annulla
+                      document.getElementById('undoBtn').onclick = function() {
+                          window.location.reload();
+                      };
+                    }
+                };
+
             } catch (error) {
               alert('Si è verificato un errore inatteso:\n' + error);
               console.error('Errore inatteso:', error);
