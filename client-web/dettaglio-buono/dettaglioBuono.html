@@ -36,7 +36,7 @@
       <p>Data di creazione: </p>
       <p></p>
       </br>
-      <button id="deleteBtn" style="display:none; background-color:#e74c3c; color:white; border:none; padding:10px; margin-right:10px; border-radius:5px; cursor:pointer;">Cancella buono</button>
+      <button id="deleteBtn" style="background-color:#e74c3c; color:white; border:none; padding:10px; margin-right:10px; border-radius:5px; cursor:pointer;">Cancella buono</button>
       <button id="consumeBtn" style="background-color:#27ae60; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer;">Consuma buono</button>
     </div>
   
@@ -57,6 +57,19 @@
                 const voucherRes = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers/${voucherId}`);
                 const voucher = await voucherRes.json();
 
+                // Funzione che permette di ottenere data e ora correnti
+                function getCustomDateTime() {
+                  const now = new Date();
+                  const year = now.getFullYear();
+                  const month = String(now.getMonth() + 1).padStart(2, '0');
+                  const day = String(now.getDate()).padStart(2, '0');
+                  const hours = String(now.getHours()).padStart(2, '0');
+                  const minutes = String(now.getMinutes()).padStart(2, '0');
+                  const seconds = String(now.getSeconds()).padStart(2, '0');
+                  // Formato: yyyy/MM/dd HH:mm:ss
+                  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+                }
+
                 // Aggiorna i <p> nella pagina
                 const ps = document.querySelectorAll('.content p');
                 if (ps.length >= 4) {
@@ -66,16 +79,15 @@
                     ps[3].innerHTML = `Data di creazione: <b>${voucher.createdDateTime} </b>`;
                     if (voucher.consumed) {
                         ps[4].innerHTML = `Data di consumo: <b>${voucher.consumedDateTime} </b>`;
-                        document.getElementById('consumeBtn').style.display = 'none';
-                        document.getElementById('deleteBtn').style.display = 'none';
-                    } else {
-                        document.getElementById('consumeBtn').style.display = 'inline-block';
-                        document.getElementById('deleteBtn').style.display = 'inline-block';
-                    }
+                    } 
                 }
 
                 // Event listener per cancellare il buono
                 document.getElementById('deleteBtn').onclick = async function() {
+                    if (voucher.consumed) {
+                        alert('Errore: Non puoi cancellare un buono già consumato!');
+                        return;
+                    }
                     if (confirm('Sei sicuro di voler cancellare il buono?')) {
                         // Recupera l'utente
                         const userRes = await fetch(`http://localhost:8080/users/${fiscalCode}`);
@@ -112,21 +124,12 @@
                     }
                 };
 
-                // Funzione che permette di ottenere data e ora correnti
-                function getCustomDateTime() {
-                  const now = new Date();
-                  const year = now.getFullYear();
-                  const month = String(now.getMonth() + 1).padStart(2, '0');
-                  const day = String(now.getDate()).padStart(2, '0');
-                  const hours = String(now.getHours()).padStart(2, '0');
-                  const minutes = String(now.getMinutes()).padStart(2, '0');
-                  const seconds = String(now.getSeconds()).padStart(2, '0');
-                  // Formato: yyyy/MM/dd HH:mm:ss
-                  return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-                }
-
                 // Event listener per consumare il buono
                 document.getElementById('consumeBtn').onclick = async function() {
+                    if (voucher.consumed) {
+                        alert('Errore: Questo buono risulta essere già stato consumato!');
+                        return;
+                    }
                     if (confirm('Vuoi consumare questo buono?')) {
                         // Aggiorna il campo consumed e consumedDateTime
                         const updatedVoucher = {
@@ -149,7 +152,6 @@
                         window.location.reload();
                     }
                 };
-
             } catch (error) {
               alert('Si è verificato un errore inatteso:\n' + error);
               console.error('Errore inatteso:', error);
