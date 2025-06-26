@@ -1,3 +1,50 @@
+#voucherForm button[type="submit"] {
+  background-color: #2196f3;
+  color: #fff;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 1em;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  cursor: pointer;
+  box-shadow: 0 2px 8px 0 rgba(33,150,243,0.15);
+  transition: background 0.2s, transform 0.2s;
+  margin-top: 18px;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+#voucherForm button[type="submit"]:hover {
+  background-color: #1769aa;
+  transform: translateY(-2px) scale(1.04);
+}
+
+#voucherForm input[type="number"],
+#voucherForm select {
+  width: 60%;
+  padding: 10px 14px;
+  margin: 10px 0 18px 0;
+  border: 1.5px solid #2196f3;
+  border-radius: 7px;
+  font-size: 1.1em;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+  background: #e0f3ff;
+  color: #1a3557;
+  box-shadow: 0 2px 8px 0 rgba(33,150,243,0.08);
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+#voucherForm input[type="number"]:focus,
+#voucherForm select:focus {
+  border: 2px solid #1769aa;
+  box-shadow: 0 0 0 2px #90caf9;
+  background: #f5fbff;
+}
+
+#voucherForm p {
+  font-size: 1.3em;
+}
+
 .open {
   background-color: #ffffff;
   width: 24px;

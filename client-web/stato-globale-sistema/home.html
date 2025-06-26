@@ -29,14 +29,16 @@
       <h1 class="ribbon">CARTA CULTURA GIOVANI</h1>
       <h1 style="font-family:'Franklin Gothic Medium', 
       'Arial Narrow', Arial, sans-serif; font-size:xx-large; display: flex; 
-      justify-content: center; align-items: center; height: 20vh;">HOME:</br>
-      BENVENUTI SUL NOSTRO SITO!</br></br>STATISTICHE GLOBALI:</h1>
+      justify-content: center; align-items: center; height: 20vh;">HOME: BENVENUTI SUL NOSTRO SITO!</br>
+      </br>STATISTICHE GLOBALI:</h1>
+      <div class="info-box">
       </br><p>NUMERO DI UTENTI REGISTRATI: </p>
       </br><p>SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione disponibile): </p>
       <p>SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione assegnata ancora non spesa): </p>
       <p>SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione spesa): </p>
       </br><p>SOMMA DEI BUONI GENERATI DA TUTTI GLI UTENTI (non consumati): </p>
       <p>SOMMA DEI BUONI GENERATI DA TUTTI GLI UTENTI (consumati): </p>
+      </div>
     </div>
   
     <script>
@@ -74,7 +76,7 @@
           });
 
           // Aggiorna i <p> nella pagina
-          const ps = document.querySelectorAll('.content p');
+          const ps = document.querySelectorAll('.info-box p');
           if (ps.length >= 6) {
             ps[0].innerHTML = `NUMERO DI UTENTI REGISTRATI: <b>${numUtenti}</b>`;
             ps[1].innerHTML = `SOMMA DEI CONTRIBUTI DI TUTTI GLI UTENTI (porzione disponibile): <b>${sommaDisponibile} €</b>`;
@@ -85,7 +87,7 @@
           }
         } catch (error) {
           console.error("Errore nel caricamento delle statistiche:", error);
-          const ps = document.querySelectorAll('.content p');
+          const ps = document.querySelectorAll('.info-box p');
           if (ps.length >= 6) {
             ps[0].innerHTML = "Errore nel caricamento utenti.";
             ps[1].innerHTML = "Errore nel caricamento contributi disponibili.";
