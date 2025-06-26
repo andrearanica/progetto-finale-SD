@@ -43,6 +43,7 @@
           <option value="Teatro">Teatro</option>
           <option value="Danza">Danza</option>
         </select>
+        <p>Inserisci quantità: </p> <input type="number" name="quantita" id="quantita" min="1" placeholder="Inserisci quantità">
         </br><button type="submit">Invia</button>
       </form>
     </div>
@@ -51,82 +52,100 @@
     window.onload = init;
 
     async function init() {
-      document.getElementById('voucherForm').onsubmit = async function(e) {
-        e.preventDefault();
+      try {
+        document.getElementById('voucherForm').onsubmit = async function(e) {
+          e.preventDefault();
 
-        const importo = parseFloat(document.getElementById('importo').value);
-        const tipologia = document.getElementById('tipologia').value;
-        const fiscalCode = sessionStorage.getItem('sessionToken');
+          const importo = parseFloat(document.getElementById('importo').value);
+          const tipologia = document.getElementById('tipologia').value;
+          const fiscalCode = sessionStorage.getItem('sessionToken');
+          const quantita = parseInt(document.getElementById('quantita').value);
 
-        if (isNaN(importo) || importo <= 0) {
-          alert('Inserisci un importo valido!');
-          return;
-        }
+          // Recupera l'utente per controllare il balance
+          const userRes = await fetch(`http://localhost:8080/users/${fiscalCode}`);
+          if (!userRes.ok) {
+            alert('Errore nel recupero dell\'utente!');
+            return;
+          }
+          const user = await userRes.json();
 
-        // Recupera l'utente per controllare il balance
-        const userRes = await fetch(`http://localhost:8080/users/${fiscalCode}`);
-        if (!userRes.ok) {
-          alert('Errore nel recupero dell\'utente!');
-          return;
-        }
-        const user = await userRes.json();
+          // Calcola il massimo numero di buoni acquistabili
+          const maxBuoni = Math.floor(user.balance / importo);
+          let buoniDaCreare = quantita;
+          if (maxBuoni <= 0) {
+            alert('Saldo insufficiente per creare anche un solo buono!');
+            return;
+          }
+          if (quantita > maxBuoni) {
+            if (maxBuoni > 1) {
+              alert(`Saldo insufficiente: verranno creati solo ${maxBuoni} buoni.`);
+            } else {
+              alert(`Saldo insufficiente: verrà creato un solo buono.`);
+            }
+            buoniDaCreare = maxBuoni;
+          }
 
-        if (user.balance < importo) {
-          alert('Saldo insufficiente per creare il buono!');
-          return;
-        }
+          // Aggiorna il balance dell'utente
+          user.balance = user.balance - (importo * buoniDaCreare);
+          const updateRes = await fetch(`http://localhost:8080/users/${fiscalCode}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(user)
+          });
+          if (!updateRes.ok) {
+            const errorText = await updateRes.text();
+            alert('Errore nell\'aggiornamento del saldo:\n' + errorText);
+            return;
+          }
 
-        // Aggiorna il balance dell'utente
-        user.balance = user.balance - importo;
-        const updateRes = await fetch(`http://localhost:8080/users/${fiscalCode}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(user)
-        });
-        if (!updateRes.ok) {
-          const errorText = await updateRes.text();
-          alert('Errore nell\'aggiornamento del saldo:\n' + errorText);
-          return;
-        }
+          // Funzione che permette di ottenere data e ora correnti
+          function getCustomDateTime() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            // Formato: yyyy/MM/dd HH:mm:ss
+            return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+          }
 
-        // Funzione che permette di ottenere data e ora correnti
-        function getCustomDateTime() {
-          const now = new Date();
-          const year = now.getFullYear();
-          const month = String(now.getMonth() + 1).padStart(2, '0');
-          const day = String(now.getDate()).padStart(2, '0');
-          const hours = String(now.getHours()).padStart(2, '0');
-          const minutes = String(now.getMinutes()).padStart(2, '0');
-          const seconds = String(now.getSeconds()).padStart(2, '0');
-          // Formato: yyyy/MM/dd HH:mm:ss
-          return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
-        }
+          // Crea i voucher in base a quanti il balance permette
+          for (let i = 0; i < buoniDaCreare; i++) {
+            const voucher = {
+              value: importo,
+              type: tipologia,
+              createdDateTime: getCustomDateTime()
+            };
 
-        // Definizione di un voucher e dei suoi parametri 
-        const voucher = {
-          value: importo,
-          type: tipologia,
-          createdDateTime: getCustomDateTime()
+            const postRes = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(voucher)
+            });
+
+            if (!postRes.ok) {
+              const errorText = await postRes.text();
+              alert('Errore nella creazione del buono:\n' + errorText);
+              return;
+            }
+          }
+
+          if (buoniDaCreare > 1) {
+            alert('Buoni creati con successo!');
+          } else {
+            alert('Buono creato con successo!');
+          }
+
+          window.location.href = '../elenco-buoni-generati/elencoBuoni.html';
+          
         };
-
-        // Aggiunta del voucher corrispettivo all'utente tramite metodo POST
-        const postRes = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(voucher)
-        });
-
-        // Se la richiesta non ha 'OK' come risposta l'utente riceve un errore
-        if (!postRes.ok) {
-          const errorText = await postRes.text();
-          alert('Errore nella creazione del buono:\n' + errorText);
-          return;
-        }
-
-        alert('Buono creato con successo!');
-        window.location.href = '../elenco-buoni-generati/elencoBuoni.html';
-      };
-    }
+      } catch (error) {
+        alert('Si è verificato un errore inatteso:\n' + error);
+        console.error('Errore inatteso:', error);
+      }
+    }    
     </script>
   </body>
 </html>
