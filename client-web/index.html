@@ -135,8 +135,7 @@
             body: JSON.stringify(jsonData)
           });
 
-          const fiscalCode = await checkResponse(response);
-          sessionStorage.setItem('sessionToken', fiscalCode);
+          sessionStorage.setItem('sessionToken', jsonData.fiscalCode);
 
           setTimeout(() => {
             window.location.replace('stato-globale-sistema/home.html');
@@ -171,7 +170,7 @@
           resetLoginForm();
         } catch (error) {
           console.error('Errore:', error.message);
-          alert('Codice fiscale non trovato o errore durante l’autenticazione.');
+          alert('Codice fiscale non trovato o errore durante l\’autenticazione.');
         }
       }
 
