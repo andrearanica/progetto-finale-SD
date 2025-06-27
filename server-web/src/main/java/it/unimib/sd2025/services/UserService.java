@@ -26,7 +26,6 @@ import it.unimib.sd2025.exceptions.UserExceptions.InvalidModifyUserException;
 public class UserService {
     private IUserDao userDao;
     private final float START_BALANCE = 500;
-    private final ReadWriteLock lock = new ReentrantReadWriteLock();
     private final String[] voucherTypes = {"cinema", "musica", "concerti", "eventi culturali", 
                                            "libri", "musei", "strumenti musicali", "teatro",
                                            "danza"};
@@ -36,12 +35,9 @@ public class UserService {
     }
 
     public List<User> getAllUsers() {
-        lock.readLock().lock();
-        try {
+        synchronized (userDao) {
             List<User> users = userDao.getAllUsers();
             return users;
-        } finally {
-            lock.readLock().unlock();
         }
     }
 
@@ -57,15 +53,12 @@ public class UserService {
 
         user.setBalance(START_BALANCE);
 
-        lock.writeLock().lock();
-        try {
+        synchronized (userDao) {
             if (!isFiscalCodeUnique(user.getFiscalCode())) {
                 throw new InvalidUserException(String.format("fiscal code '%s' is already used",
                                                              user.getFiscalCode()));
             }
             userDao.addUser(user);
-        } finally {
-            lock.writeLock().unlock();
         }
     }
 
@@ -73,11 +66,8 @@ public class UserService {
                 throws UserNotFoundException {
         User user = null;
 
-        lock.readLock().lock();
-        try {
+        synchronized (userDao) {
             user = findUserByFiscalCode(fiscalCode);
-        } finally {
-            lock.readLock().unlock();
         }
 
         if (user != null) {
@@ -91,9 +81,7 @@ public class UserService {
                 throws InvalidModifyUserException, UserNotFoundException {
         User userToModify = null;
 
-        lock.writeLock().lock();
-
-        try {
+        synchronized (userDao) {
             userToModify = findUserByFiscalCode(fiscalCode);
 
             if (userToModify == null) {
@@ -140,21 +128,15 @@ public class UserService {
             userToModify.setEmail(user.getEmail());
 
             userDao.modifyUser(userToModify);
-
-            return userToModify;
-        } finally {
-            lock.writeLock().unlock();
         }
+        return userToModify;
     }
 
     public List<Voucher> getUserVouchers(String fiscalCode) throws UserNotFoundException {
         User user;
 
-        lock.readLock().lock();
-        try {
+        synchronized (userDao) {
             user = findUserByFiscalCode(fiscalCode);
-        } finally {
-            lock.readLock().unlock();
         }
 
         if (user == null) {
@@ -168,11 +150,8 @@ public class UserService {
                    throws UserNotFoundException, InvalidVoucherException {
         User user = null;
 
-        lock.readLock().lock();
-        try {
+        synchronized (userDao) {
             user = findUserByFiscalCode(fiscalCode);
-        } finally {
-            lock.readLock().unlock();
         }
 
         if (user == null) {
@@ -191,8 +170,7 @@ public class UserService {
 
         if (voucher.getValue() <= user.getBalance()) {
             int maxVoucherId = -1;
-            lock.writeLock().lock();
-            try {
+            synchronized (userDao) {
                 for (Voucher v : user.getVouchers()) {
                     if (v.getId() > maxVoucherId) {
                         maxVoucherId = v.getId();
@@ -205,8 +183,6 @@ public class UserService {
                 userDao.addVoucherToUser(voucher, user);
 
                 userDao.modifyUser(user);
-            } finally {
-                lock.writeLock().unlock();
             }
 
             return voucher;
@@ -222,11 +198,8 @@ public class UserService {
                    throws UserNotFoundException, VoucherNotFoundException {
         User user;
 
-        lock.readLock().lock();
-        try {
+        synchronized (userDao) {
             user = findUserByFiscalCode(fiscalCode);
-        } finally {
-            lock.readLock().unlock();
         }
 
         if (user == null) {
@@ -234,11 +207,8 @@ public class UserService {
         }
 
         Voucher voucher;
-        lock.readLock().lock();
-        try {
+        synchronized (userDao) {
             voucher = findUserVoucherById(user, voucherId);
-        } finally {
-            lock.readLock().unlock();
         }
 
         if (voucher == null) {
@@ -259,8 +229,7 @@ public class UserService {
             throw new InvalidVoucherException(errorMessage);
         }
 
-        lock.writeLock().lock();
-        try {
+        synchronized (userDao) {
             User user = findUserByFiscalCode(fiscalCode);
 
             if (user == null) {
@@ -292,16 +261,13 @@ public class UserService {
             userDao.modifyUserVoucher(originalVoucher, user);
 
             return originalVoucher;
-        } finally {
-            lock.writeLock().unlock();
         }
     }
 
     public void deleteUserVoucherById(String fiscalCode, int voucherId)
                 throws UserNotFoundException, VoucherNotFoundException,
                        InvalidDeleteVoucherException {
-        lock.writeLock().lock();
-        try {
+        synchronized (userDao) {
             User user = findUserByFiscalCode(fiscalCode);
             if (user == null) {
                 throw new UserNotFoundException(fiscalCode);
@@ -324,8 +290,6 @@ public class UserService {
                 user.setBalance(user.getBalance() - v.getValue());
             }
             userDao.modifyUser(user);
-        } finally {
-            lock.writeLock().unlock();
         }
     }
 
