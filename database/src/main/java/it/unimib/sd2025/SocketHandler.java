@@ -54,6 +54,14 @@ public class SocketHandler extends Thread {
         }
         inputLine = inputLine.trim();
 
+        // Controlla che la stringa contenga solo caratteri ASCII
+        if (!inputLine.matches("^[\\x20-\\x7E]+$")) {
+            out.println("ERR Invalid characters in input");
+            return;
+        }
+
+        System.out.println("Received command: " + inputLine);
+        
         if (inputLine.toLowerCase().startsWith("set ")) {
             /*
              * Comando SET key value
