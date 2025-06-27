@@ -15,6 +15,10 @@ public class Main {
      * Porta di ascolto.
      */
     public static final int PORT = 3030;
+    /**
+     * File per inizializzare il db
+     */
+    public static final String INITIAL_DATA_FILE = "initialData.txt";
 
     /**
      * Avvia il database e l'ascolto di nuove connessioni.
@@ -37,27 +41,35 @@ public class Main {
     /**
      * Metodo principale di avvio del database.
      *
-     * @param args argomenti passati a riga di comando.
+     * @param args argomenti passati a riga di comando. (Vengono ignorati)
      *
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        // Inizializza il database.
+        // Inizializza il database con dati presi da un file.
         initialize();
+
+        // Inizia l'ascolto delle connessioni.
         startServer();
     }
 
+    /**
+     * Inizializza il database con i dati iniziali.
+     * Legge i dati da `initialData.txt` e li inserisce nel database.
+     */
     public static void initialize() {
         // Inizializza il database.
         Database db = Database.getInstance();
 
-        // Legge i dati da `initialData.txt` e li inserisce nel db
-        // Se la riga inizia con `-` vuol dire che il dato è una stringa, nel formato
-        // `-key value`
-        // Se la riga inizia con `+` vuol dire che il dato è una lista, nel formato
-        // `+key value1 value2 ...`
-
-        try (BufferedReader reader = new BufferedReader(new FileReader("initialData.txt"))) {
+        /*
+         * Legge i dati da `initialData.txt` e li inserisce nel db
+         * Se la riga inizia con `-` vuol dire che il dato è una stringa, nel formato
+         * `-key value`
+         * Se la riga inizia con `+` vuol dire che il dato è una lista, nel formato
+         * `+key value1 value2 ...`
+         */
+        try (BufferedReader reader = new BufferedReader(new FileReader(INITIAL_DATA_FILE))) {
+            System.out.println("Initializing database with data from " + INITIAL_DATA_FILE);
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
@@ -65,6 +77,7 @@ public class Main {
                     continue; // Salta le righe vuote
                 }
                 if (line.startsWith("-")) {
+                    // Rimuove il prefisso '-' e divide la riga in chiave e valore (stringa)
                     String[] parts = line.substring(1).split(" ", 2);
                     if (parts.length == 2) {
                         db.set(parts[0].trim(), parts[1].trim());
@@ -72,6 +85,7 @@ public class Main {
                         System.err.println("Invalid format for string: " + line);
                     }
                 } else if (line.startsWith("+")) {
+                    // Rimuove il prefisso '+' e divide la riga in chiave e valori (lista)
                     String[] parts = line.substring(1).split(" ");
                     if (parts.length > 1) {
                         String key = parts[0].trim();

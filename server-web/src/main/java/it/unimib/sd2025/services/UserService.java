@@ -297,7 +297,7 @@ public class UserService {
         List<String> invalidAttributes = new ArrayList<String>();
 
         Map<String, String> valuesToCheckAreNotNull = new HashMap<String, String>();
-        valuesToCheckAreNotNull.put("fiscal code", user.getFiscalCode());
+        valuesToCheckAreNotNull.put("fiscalCode", user.getFiscalCode());
         valuesToCheckAreNotNull.put("name", user.getName());
         valuesToCheckAreNotNull.put("surname", user.getSurname());
         valuesToCheckAreNotNull.put("email", user.getEmail());

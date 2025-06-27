@@ -163,7 +163,7 @@ CLEAR key
 
 ### CLEARL
 
-Rimuove l'elemento (lista) dal database.
+Rimuove l'elemento (lista) dal database. Funziona anche se l'elemento non è presente nel DB.
 
 ```
 CLEARL key
@@ -182,3 +182,13 @@ Le risposte sono di due tipi
 
 - `OK` / `OK value`: in caso di successo dell'operazione
 - `ERR error`: in caso di errore
+
+
+## Inizializzazione del DB
+
+Per aggiungere dei dati iniziali al DB all'avvia si può usare il file `initialData.txt`.
+
+Il formato è il seguente:
+
+- `-key value` per aggiungere un valore stringa
+- `+key value1 value2 value3` per aggiungere un valore lista
