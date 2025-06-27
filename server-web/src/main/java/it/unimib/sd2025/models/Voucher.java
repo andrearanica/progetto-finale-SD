@@ -64,4 +64,15 @@ public class Voucher {
     public void setConsumed(boolean consumed) {
         this.consumed = consumed;
     }
+
+    public boolean equals(Voucher anotherVoucher) {
+        boolean idEquals = (id == anotherVoucher.getId());
+        boolean valueEquals = (value == anotherVoucher.getValue());
+        boolean typeEquals = (type.equals(anotherVoucher.getType()));
+        boolean createdDateTimeEquals = (createdDateTime.equals(anotherVoucher.getCreatedDateTime()));
+        boolean consumedDateTimeEquals = (consumedDateTime == null && anotherVoucher.getConsumedDateTime() == null) || (consumedDateTime.equals(anotherVoucher.getConsumedDateTime()));
+        boolean consumedEquals = (consumed == anotherVoucher.isConsumed());
+
+        return idEquals && valueEquals && typeEquals && createdDateTimeEquals && consumedDateTimeEquals && consumedEquals;
+    }
 }

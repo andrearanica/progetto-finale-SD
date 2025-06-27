@@ -104,11 +104,34 @@ public class UserService {
             fieldsToCheck.put("name", user.getName());
             fieldsToCheck.put("surname", user.getSurname());
             fieldsToCheck.put("email", user.getEmail());
-
+            fieldsToCheck.put("fiscalCode", user.getFiscalCode());
+            
             for (Map.Entry<String, String> entry : fieldsToCheck.entrySet()) {
                 if (entry.getValue() == null) {
                     throw new InvalidModifyUserException(String.format("'%s' cannot be 'null'",
                                                                        entry.getKey()));
+                }
+            }
+
+            if (userToModify.getBalance() != user.getBalance()) {
+                throw new InvalidModifyUserException("balance");
+            }
+            if (!userToModify.getFiscalCode().equals(user.getFiscalCode())) {
+                throw new InvalidModifyUserException("fiscalCode");
+            }
+
+            List<Voucher> oldVouchers = userToModify.getVouchers();
+            List<Voucher> newVouchers = user.getVouchers();
+
+            if (newVouchers != null) {
+                if (oldVouchers.size() != newVouchers.size()) {
+                    throw new InvalidModifyUserException("vouchers");
+                }
+
+                for (int i = 0; i < oldVouchers.size(); i++) {
+                    if (!oldVouchers.get(i).equals(newVouchers.get(i))) {
+                        throw new InvalidModifyUserException("vouchers");
+                    }
                 }
             }
 
@@ -430,6 +453,10 @@ public class UserService {
         boolean createdDateHasChanged = (newVoucher.getCreatedDateTime() != null && !newVoucher.getCreatedDateTime().equals(originalVoucher.getCreatedDateTime()));
         boolean consumedDateHasChanged = (originalVoucher.getConsumedDateTime() != null && newVoucher.getConsumedDateTime() != null && !newVoucher.getConsumedDateTime().equals(originalVoucher.getConsumedDateTime()));
 
+        if (originalVoucher.getId() != newVoucher.getId()) {
+            invalidChanges.add("cannot change voucher 'id' attribute");
+        }
+
         if (originalVoucher.isConsumed() && !newVoucher.isConsumed()) {
             invalidChanges.add("cannot change voucher 'consumed' if it has already been consumed");
         }
@@ -458,6 +485,23 @@ public class UserService {
             invalidChanges.add("cannot change voucher type if voucher has been consumed");
         }
 
+        if (newVoucher.getConsumedDateTime()!= null && !isConsumedDateTimeOk(newVoucher.getConsumedDateTime(), originalVoucher.getCreatedDateTime())) {
+            invalidChanges.add("'consumedDateTime' must be after 'createdDateTime'");
+        }
+
         return invalidChanges;
+    }
+
+    private boolean isConsumedDateTimeOk(String consumedDateTimeRaw, String createdDateTimeRaw) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        dateFormat.setLenient(false);
+        
+        try {
+            Date consumedDateTime = dateFormat.parse(consumedDateTimeRaw.trim());
+            Date createdDateTime = dateFormat.parse(createdDateTimeRaw.trim());
+            return consumedDateTime.after(createdDateTime);
+        } catch (ParseException e) {
+            return false;
+        }
     }
 }

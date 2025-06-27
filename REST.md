@@ -3,6 +3,8 @@
 **Attenzione**: l'unica rappresentazione ammessa è in formato JSON. Pertanto vengono assunti gli 
 header `Content-Type: application/json` e `Accept: application/json`.
 
+**Importante**: il formato di rappresentazione delle date è `GIORNO/MESE/ANNO ORE:MINUTI:SECONDI`.
+
 ## `/users`
 
 ### GET​
@@ -60,7 +62,10 @@ header `Content-Type: application/json` e `Accept: application/json`.
 
 **Header**: nessuno.
 
-**Body**: una rappresentazione di `user` che contiene i nuovi dati da assegnare all'utente.
+**Body**: una rappresentazione di `user` che contiene i nuovi dati da assegnare all'utente. 
+N.B. È possibile omettere il campo `vouchers`; anche se presente, non sarà possibile modificare
+questo attributo della risorsa (verrà generato un errore 400). Per poter aggiungere/rimuovere/
+modificare voucher è necessario usare gli endpoint specifici `/users/fiscalCode/vouchers`.
 
 **Risposta**: un oggetto `User`, che ha come campi `name`, `surname`, `email`, `fiscalCode`, 
 `balance` e `vouchers`.
@@ -139,13 +144,16 @@ N.B. Le date seguono il formato `GG/MM/YYYY hh:mm:ss`.
 
 **Header**: nessuno.
 
-**Body richiesta**: un oggetto `Voucher` di cui verrà preso solamente il campo `consumed`.
+**Body richiesta**: un oggetto `Voucher`. N.B. Non sarà possibile modificare i valori degli 
+attributi `type`, `value`, `createdDateTime`: gli unici attributi modificabili saranno `consumed` e
+`consumedDateTime`, che possono diventare da `false/null` a `true/data`. Per poter impostare questi
+due attributi, è necessario che entrambi siano presenti all'interno della rappresentazione fornita.
 
 **Risposta**: restituisce la nuova rappresentazione della risorsa, con le modifiche richieste.
 
 **Codici di stato restituiti**: 
 * `200 OK`.
-* `400 Bad request` se i dati forniti non sono validi
+* `400 Bad request` se i dati forniti non sono validi o mancanti
 * `404 Not Found` se non è presente un utente con il codice fiscale fornito oppure se non esiste un 
                   voucher con l'id fornito
 
