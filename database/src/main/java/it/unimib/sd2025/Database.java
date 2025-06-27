@@ -18,7 +18,7 @@ public class Database {
     private static Database instance;
     private ConcurrentHashMap<String, String> archivio;
 
-    // Crea anche l'archivio per le liste, utilizzando Vector perchre è
+    // Crea anche l'archivio per le liste, utilizzando Vector perché è
     // sincronizzato.
     private ConcurrentHashMap<String, Vector<String>> archivioListe;
 
@@ -39,17 +39,19 @@ public class Database {
     private Database() {
         // Inizializzazione del database.
         // Inizializza l'hashmap
+        // L'inizializzazione è lazy. Avviene alla prima getInstance().
         this.archivio = new ConcurrentHashMap<>();
         this.archivioListe = new ConcurrentHashMap<>();
     }
 
     /**
-     * Esegue un'operazione sul database.
+     * Esegue una SET sul database.
      * 
-     * @param operation L'operazione da eseguire.
+     * @param key   Chiave.
+     * @param value Valore.
      * @return Il risultato dell'operazione.
      */
-    public String set(String key, String value) {
+    public synchronized String set(String key, String value) {
         try {
             // Controlla se la chiave è valida.
             if (key == null || key.isEmpty()) {
@@ -70,7 +72,13 @@ public class Database {
         }
     }
 
-    public String get(String key) {
+    /**
+     * Esegue una GET sul database.
+     * 
+     * @param key Chiave da cercare.
+     * @return Il valore associato alla chiave.
+     */
+    public synchronized String get(String key) {
         try {
             // Controlla se la chiave è valida.
             if (key == null || key.isEmpty()) {
@@ -91,7 +99,13 @@ public class Database {
         }
     }
 
-    public String clear(String key) {
+    /**
+     * Esegue una CLEAR sul database.
+     * 
+     * @param key Chiave da cancellare.
+     * @return Il risultato dell'operazione.
+     */
+    public synchronized String clear(String key) {
         try {
             // Controlla se la chiave è valida.
             if (key == null || key.isEmpty()) {
@@ -106,7 +120,16 @@ public class Database {
         }
     }
 
-    // Funzioni per le liste
+    /*
+     * Funzioni per le liste
+     */
+
+    /**
+     * Esegue una SETL sul database.
+     * @param key   Chiave della lista.
+     * @param value Valore da associare alla chiave nella lista.
+     * @return Il risultato dell'operazione.
+     */
     public synchronized String setl(String key, Vector<String> value) {
         try {
             // Controlla se la chiave è valida.
@@ -128,6 +151,12 @@ public class Database {
         }
     }
 
+    /**
+     * Esegue una GETL sul database.
+     * 
+     * @param key Chiave della lista da cercare.
+     * @return Il valore associato alla chiave nella lista.
+     */
     public synchronized String getl(String key) {
         try {
             // Controlla se la chiave è valida.
@@ -148,6 +177,12 @@ public class Database {
         }
     }
 
+    /**
+     * Esegue una CLEARL sul database.
+     * 
+     * @param key Chiave della lista da cancellare.
+     * @return Il risultato dell'operazione.
+     */
     public synchronized String clearl(String key) {
         try {
             // Controlla se la chiave è valida.
@@ -163,6 +198,13 @@ public class Database {
         }
     }
 
+    /**
+     * Aggiunge un valore alla lista associata alla chiave.
+     * 
+     * @param key   Chiave della lista.
+     * @param value Valore da aggiungere alla lista.
+     * @return Il risultato dell'operazione.
+     */
     public synchronized String addl(String key, String value) {
         try {
             // Controlla se la chiave è valida.
@@ -186,6 +228,13 @@ public class Database {
         }
     }
 
+    /**
+     * Rimuove un valore dalla lista associata alla chiave.
+     * 
+     * @param key   Chiave della lista.
+     * @param value Valore da rimuovere dalla lista.
+     * @return Il risultato dell'operazione.
+     */
     public synchronized String removel(String key, String value) {
         try {
             // Controlla se la chiave è valida.
