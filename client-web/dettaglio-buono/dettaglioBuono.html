@@ -115,18 +115,6 @@
                             balance: nuovoBalance
                         };
 
-                        // Aggiorna il balance utente nel backend
-                        const res1 = await fetch(`http://localhost:8080/users/${fiscalCode}`, {
-                            method: 'PUT', 
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(updatedBalance)
-                        });
-                        if (!res1.ok) {
-                            const errorText = await res1.text();
-                            alert('Errore nel cancellare il buono!\n' + errorText);
-                            return;
-                        }
-
                         // Cancella il buono
                         const res2 = await fetch(`http://localhost:8080/users/${fiscalCode}/vouchers/${voucherId}`, {
                             method: 'DELETE'
@@ -151,7 +139,6 @@
                         // Aggiorna il campo consumed e consumedDateTime
                         const updatedVoucher = {
                             ...voucher,
-                            consumed: true,
                             consumedDateTime: getCustomDateTime()
                         };
 

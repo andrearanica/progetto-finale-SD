@@ -61,6 +61,16 @@
           const fiscalCode = sessionStorage.getItem('sessionToken');
           const quantita = parseInt(document.getElementById('quantita').value);
 
+          // Controllo campi obbligatori
+          if (
+            isNaN(importo) || importo <= 0 ||
+            !tipologia ||
+            isNaN(quantita) || quantita <= 0
+          ) {
+            alert('Errore: Compila tutti i campi obbligatori con valori validi prima di continuare!');
+            return;
+          }
+
           // Recupera l'utente per controllare il balance
           const userRes = await fetch(`http://localhost:8080/users/${fiscalCode}`);
           if (!userRes.ok) {
@@ -83,19 +93,6 @@
               alert(`Saldo insufficiente: verrà creato un solo buono.`);
             }
             buoniDaCreare = maxBuoni;
-          }
-
-          // Aggiorna il balance dell'utente
-          user.balance = user.balance - (importo * buoniDaCreare);
-          const updateRes = await fetch(`http://localhost:8080/users/${fiscalCode}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(user)
-          });
-          if (!updateRes.ok) {
-            const errorText = await updateRes.text();
-            alert('Errore nell\'aggiornamento del saldo:\n' + errorText);
-            return;
           }
 
           // Funzione che permette di ottenere data e ora correnti
