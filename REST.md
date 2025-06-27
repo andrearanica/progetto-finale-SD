@@ -35,7 +35,7 @@ header `Content-Type: application/json` e `Accept: application/json`.
 **Codici di stato restituiti**:
 
 * `201 Created`: successo.
-* `400 Bad Request`: c'è un errore del client (JSON, campo mancante o altro).
+* `400 Bad Request`: c'è un errore del client (JSON, campo mancante, codice fiscale non valido...).
 
 ## `/users/{fiscalCode}`
 
@@ -56,16 +56,16 @@ header `Content-Type: application/json` e `Accept: application/json`.
 
 ### PUT
 
-**Descrizione**: sistituisce le informazioni di un utente nel sistema.
+**Descrizione**: sostituisce le informazioni di un utente nel sistema.
 
 **Parametri**: `fiscalCode`, ossia il codice fiscale dell'utente.
 
 **Header**: nessuno.
 
-**Body**: una rappresentazione di `user` che contiene i nuovi dati da assegnare all'utente. 
-N.B. È possibile omettere il campo `vouchers`; anche se presente, non sarà possibile modificare
-questo attributo della risorsa (verrà generato un errore 400). Per poter aggiungere/rimuovere/
-modificare voucher è necessario usare gli endpoint specifici `/users/fiscalCode/vouchers`.
+**Body**: una rappresentazione di `User` che contiene i nuovi dati da assegnare all'utente. 
+N.B. È possibile omettere il campo `vouchers, e non è possibile modificare questo attributo 
+tramite questo tipo di richiesta (verrà generato un errore 400). Per poter aggiungere/rimuovere/
+modificare voucher è necessario usare l'endpoint `/users/fiscalCode/vouchers`.
 
 **Risposta**: un oggetto `User`, che ha come campi `name`, `surname`, `email`, `fiscalCode`, 
 `balance` e `vouchers`.
@@ -87,9 +87,7 @@ del sistema.
 **Header**: nessuno.
 
 **Risposta**: una lista di oggetti `voucher`, che hanno come campi `type`, `value`, `consumed`, 
-`createdDateTime`, `consumedDateTime`. 
-
-N.B. Le date seguono il formato `GG/MM/YYYY hh:mm:ss`.
+`createdDateTime`, `consumedDateTime`.
 
 **Codici di stato restituiti**: 
 * `200 OK`
@@ -127,7 +125,7 @@ N.B. Le date seguono il formato `GG/MM/YYYY hh:mm:ss`.
 **Header**: nessuno.
 
 **Risposta**: la rappresentazione di un oggetto `Voucher`, che ha come campi `id`, `type`, `value`, 
-`consumed`, `createdDateTime` e `consumedDateTime` (se `consumed` è `true`).
+`consumed`, `createdDateTime` (e `consumedDateTime`, se `consumed` è `true`).
 
 **Codici di stato restituiti**: 
 * `200 OK`
@@ -146,8 +144,10 @@ N.B. Le date seguono il formato `GG/MM/YYYY hh:mm:ss`.
 
 **Body richiesta**: un oggetto `Voucher`. N.B. Non sarà possibile modificare i valori degli 
 attributi `type`, `value`, `createdDateTime`: gli unici attributi modificabili saranno `consumed` e
-`consumedDateTime`, che possono diventare da `false/null` a `true/data`. Per poter impostare questi
-due attributi, è necessario che entrambi siano presenti all'interno della rappresentazione fornita.
+`consumedDateTime`, che possono diventare da `false/null` a `true/datetime`. Per poter impostare 
+questi due attributi, è necessario che entrambi siano presenti all'interno della rappresentazione 
+fornita (ad esempio non è possibile impostare l'attributo `consumed` a `true` senza specificare 
+`consumedDateTime`)
 
 **Risposta**: restituisce la nuova rappresentazione della risorsa, con le modifiche richieste.
 
