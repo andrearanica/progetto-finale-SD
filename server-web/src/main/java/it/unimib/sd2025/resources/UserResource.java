@@ -129,6 +129,7 @@ public class UserResource {
 
     @GET
     @Path("/{fiscalCode}/vouchers/{voucherId}")
+    @Produces(MediaType.APPLICATION_JSON)
     public Response getUserVoucherById(@PathParam("fiscalCode") String fiscalCode, 
                                        @PathParam("voucherId") int voucherId) {
         try {
@@ -141,6 +142,7 @@ public class UserResource {
 
     @PUT
     @Path("/{fiscalCode}/vouchers/{voucherId}")
+    @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     public Response modifyUserVoucherById(@PathParam("fiscalCode") String fiscalCode, 
                                           @PathParam("voucherId") int voucherId, Voucher newVoucher) {

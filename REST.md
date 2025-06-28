@@ -1,9 +1,29 @@
 # Progetto Sistemi Distribuiti 2024-2025 - API REST
 
-**Attenzione**: l'unica rappresentazione ammessa è in formato JSON. Pertanto vengono assunti gli 
-header `Content-Type: application/json` e `Accept: application/json`.
+**Attenzione**: 
+- L'unica rappresentazione ammessa è in formato JSON. Pertanto vengono assunti gli 
+header `Content-Type: application/json` e `Accept: application/json`
+- Il formato di rappresentazione delle date è `GIORNO/MESE/ANNO ORE:MINUTI:SECONDI`
+- In caso di errore lato client (4xx) o lato server (5xx), il body della risposta conterrà un
+attributo "error" con una stringa che spiega l'errore che si è verificato a seguito della richiesta. 
+Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito.
 
-**Importante**: il formato di rappresentazione delle date è `GIORNO/MESE/ANNO ORE:MINUTI:SECONDI`.
+**Risorse e attributi**
+- `User`: risorsa che rappresenta un utente all'interno del sistema. I suoi attributi sono:
+    - `name` (string)
+    - `surname` (string)
+    - `email` (string)
+    - `fiscalCode` (string)
+    - `vouchers` (List<Voucher>): voucher generati da un utente
+    - `balance` (float): credito residuo a disposizione di un utente
+- `Voucher`: risorsa che rappresenta un voucher creato da un utente. I suoi attributi sono:
+    - `id` (int)
+    - `type` (string): categoria di cui il voucher fa parte
+    - `value` (float)
+    - `consumed` (boolean)
+    - `createdDateTime` (string)
+    - `consumedDateTime` (string): se il voucher è stato consumato, indica la data in cui è stato 
+    consumato
 
 ## `/users`
 
@@ -15,8 +35,7 @@ header `Content-Type: application/json` e `Accept: application/json`.
 
 **Header**: nessuno.
 
-**Risposta**: una lista di rappresentazioni di oggetti `user`; i campi di ogni oggetto sono 
-`balance`, `email`, `fiscalCode`, `name`, `surname`, `vouchers` (che è una lista di `voucher`).
+**Risposta**: una lista di rappresentazioni di oggetti `user`.
 
 **Codici di stato restituiti**: `200 OK`
 
@@ -28,7 +47,9 @@ header `Content-Type: application/json` e `Accept: application/json`.
 
 **Header**: nessuno.
 
-**Body richiesta**: singolo utente con i campi `name`, `surname`, `email` e `fiscalCode`.
+**Body richiesta**: rappresentazione di un utente; il campo `vouchers`, se presente, verrà ignorato, 
+dato che per poter aggiungere/modificare/eliminare i voucher associati ad un utente è necessario 
+usare gli endpoint specifici per i voucher.
 
 **Risposta**: body vuoto e la risorsa creata è indicata nell'header `Location`.
 
@@ -47,8 +68,7 @@ header `Content-Type: application/json` e `Accept: application/json`.
 
 **Header**: nessuno.
 
-**Risposta**: un oggetto `User`, che ha come campi `name`, `surname`, `email`, `fiscalCode`, 
-`balance`, e `vouchers`, ossia una lista di oggetti `voucher`.
+**Risposta**: una rappresentazione di un oggetto `User`.
 
 **Codici di stato restituiti**: 
 * `200 OK`
@@ -63,7 +83,7 @@ header `Content-Type: application/json` e `Accept: application/json`.
 **Header**: nessuno.
 
 **Body**: una rappresentazione di `User` che contiene i nuovi dati da assegnare all'utente. 
-N.B. È possibile omettere il campo `vouchers, e non è possibile modificare questo attributo 
+N.B. È possibile omettere il campo `vouchers`, e non è possibile modificare questo attributo 
 tramite questo tipo di richiesta (verrà generato un errore 400). Per poter aggiungere/rimuovere/
 modificare voucher è necessario usare l'endpoint `/users/fiscalCode/vouchers`.
 
@@ -86,8 +106,7 @@ del sistema.
 
 **Header**: nessuno.
 
-**Risposta**: una lista di oggetti `voucher`, che hanno come campi `type`, `value`, `consumed`, 
-`createdDateTime`, `consumedDateTime`.
+**Risposta**: una lista di rappresentazioni di oggetti `voucher`.
 
 **Codici di stato restituiti**: 
 * `200 OK`
@@ -101,8 +120,8 @@ del sistema.
 
 **Header**: nessuno.
 
-**Body richiesta**: rappresentazione di un oggetto `Voucher`, con i campi `type`, `value` e 
-`createdDateTime`.
+**Body richiesta**: rappresentazione di un oggetto `Voucher`. 
+N.B. I campi `consumedDateTime` e `consumed` verranno ignorati.
 
 **Risposta**: body vuoto e la risorsa creata è indicata nell'header `Location`.
 
@@ -124,8 +143,7 @@ del sistema.
 
 **Header**: nessuno.
 
-**Risposta**: la rappresentazione di un oggetto `Voucher`, che ha come campi `id`, `type`, `value`, 
-`consumed`, `createdDateTime` (e `consumedDateTime`, se `consumed` è `true`).
+**Risposta**: la rappresentazione di un oggetto `Voucher`.
 
 **Codici di stato restituiti**: 
 * `200 OK`

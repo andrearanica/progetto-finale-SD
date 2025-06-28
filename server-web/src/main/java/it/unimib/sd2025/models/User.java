@@ -49,7 +49,7 @@ public class User {
 
     public void setFiscalCode(String fiscalCode) {
         if (fiscalCode == null || fiscalCode.equals("")) {
-
+            throw new RuntimeException("Fiscal code cannot be null or empty");
         }
         this.fiscalCode = fiscalCode;
     }
