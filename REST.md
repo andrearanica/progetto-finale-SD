@@ -121,7 +121,8 @@ del sistema.
 **Header**: nessuno.
 
 **Body richiesta**: rappresentazione di un oggetto `Voucher`. 
-N.B. I campi `consumedDateTime` e `consumed` verranno ignorati.
+N.B. Il campo `consumedDateTime` deve essere `null` e `consumed` deve valere `false`, altrimenti 
+verrà generato un errore; non è quindi possibile crere un voucher che sia già stato consumato.
 
 **Risposta**: body vuoto e la risorsa creata è indicata nell'header `Location`.
 

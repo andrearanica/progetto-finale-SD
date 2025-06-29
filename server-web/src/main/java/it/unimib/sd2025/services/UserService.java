@@ -166,6 +166,10 @@ public class UserService {
                                                             invalidAttributes.get(0)));
         }
 
+        if (voucher.isConsumed() || voucher.getConsumedDateTime() != null) {
+            throw new InvalidVoucherException("Voucher must not be consumed when created");
+        }
+
         if (voucher.getValue() <= user.getBalance()) {
             int maxVoucherId = -1;
             synchronized (userDao) {
