@@ -17,7 +17,8 @@ Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito
     - `vouchers` (list): voucher generati da un utente
     - `balance` (float): credito residuo a disposizione di un utente
 - `Voucher`: risorsa che rappresenta un buono creato da un utente. I suoi attributi sono:
-    - `id` (int)
+    - `id` (int): viene ignorato se presente nel body delle richieste relative ai voucher, dato che
+    viene generato automaticamente dal server
     - `type` (string): categoria di cui il voucher fa parte
     - `value` (float)
     - `consumed` (boolean)
@@ -87,8 +88,7 @@ N.B. È possibile omettere il campo `vouchers`, e non è possibile modificare qu
 tramite questo tipo di richiesta (verrà generato un errore 400). Per poter aggiungere/rimuovere/
 modificare voucher è necessario usare l'endpoint `/users/fiscalCode/vouchers`.
 
-**Risposta**: un oggetto `User`, che ha come campi `name`, `surname`, `email`, `fiscalCode`, 
-`balance` e `vouchers`.
+**Risposta**: una rappresentazione di un oggetto `User`.
 
 **Codici di stato restituiti**: 
 * `200 OK`
@@ -123,6 +123,7 @@ del sistema.
 **Body richiesta**: rappresentazione di un oggetto `Voucher`. 
 N.B. Il campo `consumedDateTime` deve essere `null` e `consumed` deve valere `false`, altrimenti 
 verrà generato un errore; non è quindi possibile crere un voucher che sia già stato consumato.
+Inoltre il valore del voucher deve essere minore o uguale al credito residuo dell'utente.
 
 **Risposta**: body vuoto e la risorsa creata è indicata nell'header `Location`.
 
@@ -163,10 +164,10 @@ verrà generato un errore; non è quindi possibile crere un voucher che sia già
 
 **Body richiesta**: un oggetto `Voucher`. N.B. Non sarà possibile modificare i valori degli 
 attributi `type`, `value`, `createdDateTime`: gli unici attributi modificabili saranno `consumed` e
-`consumedDateTime`, che possono diventare da `false/null` a `true/datetime`. Per poter impostare 
-questi due attributi, è necessario che entrambi siano presenti all'interno della rappresentazione 
-fornita (ad esempio non è possibile impostare l'attributo `consumed` a `true` senza specificare 
-`consumedDateTime`)
+`consumedDateTime`, che possono diventare rispettivamente da `false/null` a `true/datetime`. Per 
+poter impostare questi due attributi, è necessario che entrambi siano presenti all'interno della 
+rappresentazione fornita (ad esempio non è possibile impostare l'attributo `consumed` a `true` senza
+ specificare `consumedDateTime`)
 
 **Risposta**: restituisce la nuova rappresentazione della risorsa, con le modifiche richieste.
 
