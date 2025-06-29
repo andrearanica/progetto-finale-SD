@@ -16,3 +16,16 @@
 -RNCNDR04T22A794U.voucher1.consumed false
 -RNCNDR04T22A794U.voucher1.type cinema
 -RNCNDR04T22A794U.voucher1.createdDateTime 27/06/2025~10:12:25
+-ZTTFRC04A26D416S.name Federico
+-ZTTFRC04A26D416S.surname Zotti
+-ZTTFRC04A26D416S.email f.zotti@campus.unimib.it
+-ZTTFRC04A26D416S.balance 470
++ZTTFRC04A26D416S.vouchersIds 0 1
+-ZTTFRC04A26D416S.voucher0.value 10
+-ZTTFRC04A26D416S.voucher0.consumed false
+-ZTTFRC04A26D416S.voucher0.type libri
+-ZTTFRC04A26D416S.voucher0.createdDateTime 22/06/2025~10:12:25
+-ZTTFRC04A26D416S.voucher1.value 20
+-ZTTFRC04A26D416S.voucher1.consumed false
+-ZTTFRC04A26D416S.voucher1.type cinema
+-ZTTFRC04A26D416S.voucher1.createdDateTime 27/06/2025~10:12:25
