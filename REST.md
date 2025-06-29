@@ -12,8 +12,8 @@ Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito
 - `User`: risorsa che rappresenta un utente all'interno del sistema. I suoi attributi sono:
     - `name` (string)
     - `surname` (string)
-    - `email` (string)
-    - `fiscalCode` (string)
+    - `email` (string): stringa che segue la struttura standard delle mail (user@domain)
+    - `fiscalCode` (string): stringa che segue la struttura dei codici fiscali italiani
     - `vouchers` (list): voucher generati da un utente
     - `balance` (float): credito residuo a disposizione di un utente
 - `Voucher`: risorsa che rappresenta un buono creato da un utente. I suoi attributi sono:
