@@ -1,7 +1,3 @@
-# TODO
-
-- [ ] Capire se bene quali sono i comandi necessari per gestire le liste
-
 # Progetto Sistemi Distribuiti 2024-2025 - TCP
 
 Il protocollo implementato dal DB è di tipo testuale.
@@ -11,8 +7,9 @@ Esistono solo due tipi di dati:
 - list
 
 Questi tipi vengono memorizzati in hash map completamenti separati,
-quindi è possibile utilizzari chiavi uguali per memorizzare sia stringhe che list.
-I comandi che operano su liste hanno il suffisso `l` (es. `set` e `setl`).
+quindi è possibile utilizzare chiavi uguali per memorizzare sia stringhe che list.
+I comandi che operano su liste hanno il suffisso `l` (es. `SET` e `SETL`).
+I comandi sono case insensitive.
 
 Tutta la comunicazione avviene in *ASCII*, non sono ammessi caratteri al di fuori dello standard.
 Ogni messaggio è composto da un comando, opzionalmente un valore, e un delimitatore `\n`.
