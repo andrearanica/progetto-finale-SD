@@ -13,7 +13,7 @@ Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito
     - `name` (string)
     - `surname` (string)
     - `email` (string): stringa che segue la struttura standard delle mail (user@domain)
-    - `fiscalCode` (string): stringa che segue la struttura dei codici fiscali italiani
+    - `fiscalCode` (string): stringa che segue la struttura dei codici fiscali italiani (6 lettere, 2 numeri, 1 lettera, 2 numeri, 1 lettera, 3 numeri, 1 lettera)
     - `vouchers` (list): voucher generati da un utente
     - `balance` (float): credito residuo a disposizione di un utente
 - `Voucher`: risorsa che rappresenta un buono creato da un utente. I suoi attributi sono:
@@ -50,7 +50,8 @@ Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito
 
 **Body richiesta**: rappresentazione di un utente; il campo `vouchers` deve essere una lista vuota, 
 dato che per poter aggiungere/modificare/eliminare i voucher associati ad un utente è necessario 
-usare gli endpoint specifici per i voucher (altrimenti viene generato un errore).
+usare gli endpoint specifici per i voucher (altrimenti viene generato un errore). Il campo `balance`,
+se presente, verrà ignorato e impostato di default a 500.
 
 **Risposta**: body vuoto e la risorsa creata è indicata nell'header `Location`.
 
@@ -88,7 +89,7 @@ N.B. È possibile omettere il campo `vouchers`, e non è possibile modificare qu
 tramite questo tipo di richiesta (verrà generato un errore 400). Per poter aggiungere/rimuovere/
 modificare voucher è necessario usare l'endpoint `/users/fiscalCode/vouchers`.
 
-**Risposta**: una rappresentazione di un oggetto `User`.
+**Risposta**: una rappresentazione di un oggetto `User` con le modifiche applicate.
 
 **Codici di stato restituiti**: 
 * `200 OK`
@@ -167,7 +168,7 @@ attributi `type`, `value`, `createdDateTime`: gli unici attributi modificabili s
 `consumedDateTime`, che possono diventare rispettivamente da `false/null` a `true/datetime`. Per 
 poter impostare questi due attributi, è necessario che entrambi siano presenti all'interno della 
 rappresentazione fornita (ad esempio non è possibile impostare l'attributo `consumed` a `true` senza
- specificare `consumedDateTime`)
+ specificare `consumedDateTime` e viceversa). In tutti questi casi, viene generato un errore.
 
 **Risposta**: restituisce la nuova rappresentazione della risorsa, con le modifiche richieste.
 
