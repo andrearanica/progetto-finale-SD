@@ -46,7 +46,9 @@ public class UserService {
 
         List<String> invalidAttributes = getInvalidUserAttributes(user);
         if (invalidAttributes.size() > 0) {
-            throw new InvalidUserException("user fields not valid (" + invalidAttributes + ")");
+            String errorMessage = String.format("user field '%s' not valid", 
+                                                invalidAttributes.get(0));
+            throw new InvalidUserException(errorMessage);
         }
 
         user.setBalance(START_BALANCE);
@@ -85,42 +87,44 @@ public class UserService {
             if (userToModify == null) {
                 throw new UserNotFoundException(fiscalCode);
             }
+        }
 
-            Map<String, String> fieldsToCheck = new HashMap<String, String>();
-            fieldsToCheck.put("name", user.getName());
-            fieldsToCheck.put("surname", user.getSurname());
-            fieldsToCheck.put("email", user.getEmail());
-            fieldsToCheck.put("fiscalCode", user.getFiscalCode());
-            
-            for (Map.Entry<String, String> entry : fieldsToCheck.entrySet()) {
-                if (entry.getValue() == null) {
-                    throw new InvalidModifyUserException(String.format("'%s' cannot be 'null'",
-                                                                       entry.getKey()));
-                }
+        Map<String, String> fieldsToCheck = new HashMap<String, String>();
+        fieldsToCheck.put("name", user.getName());
+        fieldsToCheck.put("surname", user.getSurname());
+        fieldsToCheck.put("email", user.getEmail());
+        fieldsToCheck.put("fiscalCode", user.getFiscalCode());
+        
+        for (Map.Entry<String, String> entry : fieldsToCheck.entrySet()) {
+            if (entry.getValue() == null) {
+                throw new InvalidModifyUserException(String.format("'%s' cannot be 'null'",
+                                                                    entry.getKey()));
+            }
+        }
+
+        if (userToModify.getBalance() != user.getBalance()) {
+            throw new InvalidModifyUserException("balance");
+        }
+        if (!userToModify.getFiscalCode().equals(user.getFiscalCode())) {
+            throw new InvalidModifyUserException("fiscalCode");
+        }
+
+        List<Voucher> oldVouchers = userToModify.getVouchers();
+        List<Voucher> newVouchers = user.getVouchers();
+
+        if (newVouchers != null) {
+            if (oldVouchers.size() != newVouchers.size()) {
+                throw new InvalidModifyUserException("vouchers");
             }
 
-            if (userToModify.getBalance() != user.getBalance()) {
-                throw new InvalidModifyUserException("balance");
-            }
-            if (!userToModify.getFiscalCode().equals(user.getFiscalCode())) {
-                throw new InvalidModifyUserException("fiscalCode");
-            }
-
-            List<Voucher> oldVouchers = userToModify.getVouchers();
-            List<Voucher> newVouchers = user.getVouchers();
-
-            if (newVouchers != null) {
-                if (oldVouchers.size() != newVouchers.size()) {
+            for (int i = 0; i < oldVouchers.size(); i++) {
+                if (!oldVouchers.get(i).equals(newVouchers.get(i))) {
                     throw new InvalidModifyUserException("vouchers");
                 }
-
-                for (int i = 0; i < oldVouchers.size(); i++) {
-                    if (!oldVouchers.get(i).equals(newVouchers.get(i))) {
-                        throw new InvalidModifyUserException("vouchers");
-                    }
-                }
             }
+        }
 
+        synchronized (userDao) {
             userToModify.setName(user.getName());
             userToModify.setSurname(user.getSurname());
             userToModify.setEmail(user.getEmail());
@@ -325,6 +329,10 @@ public class UserService {
             if (!matcher.find()) {
                 invalidAttributes.add("fiscalCode");
             }
+        }
+
+        if (user.getVouchers() != null && !user.getVouchers().isEmpty()) {
+            invalidAttributes.add("vouchers");
         }
 
         return invalidAttributes;

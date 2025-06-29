@@ -5,8 +5,8 @@
 header `Content-Type: application/json` e `Accept: application/json`
 - Il formato di rappresentazione delle date è `GIORNO/MESE/ANNO ORE:MINUTI:SECONDI`
 - In caso di errore lato client (4xx) o lato server (5xx), il body della risposta conterrà un
-attributo "error" con una stringa che spiega l'errore che si è verificato a seguito della richiesta. 
-Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito.
+attributo "error" con una stringa che spiega l'errore che si è verificato a seguito della richiesta.
+Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito
 
 **Risorse e attributi**
 - `User`: risorsa che rappresenta un utente all'interno del sistema. I suoi attributi sono:
@@ -14,9 +14,9 @@ Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito.
     - `surname` (string)
     - `email` (string)
     - `fiscalCode` (string)
-    - `vouchers` (List<Voucher>): voucher generati da un utente
+    - `vouchers` (list): voucher generati da un utente
     - `balance` (float): credito residuo a disposizione di un utente
-- `Voucher`: risorsa che rappresenta un voucher creato da un utente. I suoi attributi sono:
+- `Voucher`: risorsa che rappresenta un buono creato da un utente. I suoi attributi sono:
     - `id` (int)
     - `type` (string): categoria di cui il voucher fa parte
     - `value` (float)
@@ -47,9 +47,9 @@ Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito.
 
 **Header**: nessuno.
 
-**Body richiesta**: rappresentazione di un utente; il campo `vouchers`, se presente, verrà ignorato, 
+**Body richiesta**: rappresentazione di un utente; il campo `vouchers` deve essere una lista vuota, 
 dato che per poter aggiungere/modificare/eliminare i voucher associati ad un utente è necessario 
-usare gli endpoint specifici per i voucher.
+usare gli endpoint specifici per i voucher (altrimenti viene generato un errore).
 
 **Risposta**: body vuoto e la risorsa creata è indicata nell'header `Location`.
 
