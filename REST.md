@@ -19,7 +19,8 @@ Eviteremo di specificare questo dettaglio nella risposte illustrate di seguito
 - `Voucher`: risorsa che rappresenta un buono creato da un utente. I suoi attributi sono:
     - `id` (int): viene ignorato se presente nel body delle richieste relative ai voucher, dato che
     viene generato automaticamente dal server
-    - `type` (string): categoria di cui il voucher fa parte
+    - `type` (string): categoria di cui il voucher fa parte ("cinema", "musica", "concerti", "eventi culturali",
+    "libri", "musei", "strumenti musicali", "teatro", "danza")
     - `value` (float)
     - `consumed` (boolean)
     - `createdDateTime` (string)
@@ -164,11 +165,13 @@ Inoltre il valore del voucher deve essere minore o uguale al credito residuo del
 **Header**: nessuno.
 
 **Body richiesta**: un oggetto `Voucher`. N.B. Non sarà possibile modificare i valori degli 
-attributi `type`, `value`, `createdDateTime`: gli unici attributi modificabili saranno `consumed` e
-`consumedDateTime`, che possono diventare rispettivamente da `false/null` a `true/datetime`. Per 
-poter impostare questi due attributi, è necessario che entrambi siano presenti all'interno della 
-rappresentazione fornita (ad esempio non è possibile impostare l'attributo `consumed` a `true` senza
- specificare `consumedDateTime` e viceversa). In tutti questi casi, viene generato un errore.
+attributi `value`, `createdDateTime`: gli unici attributi modificabili saranno `consumed` e
+`consumedDateTime`, che possono diventare rispettivamente da `false/null` a `true/datetime`, 
+e `type`, che può essere cambiato con un'altra tipologia tra quele scritte sopra. Per 
+poter modificare `consumed` e `createdDateTime` è necessario che entrambi siano presenti 
+all'interno della rappresentazione fornita (ad esempio non è possibile impostare l'attributo 
+`consumed` a `true` senza specificare `consumedDateTime` e viceversa). In tutti questi casi, 
+viene generato un errore.
 
 **Risposta**: restituisce la nuova rappresentazione della risorsa, con le modifiche richieste.
 
