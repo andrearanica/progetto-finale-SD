@@ -1,6 +1,7 @@
 # Progetto Sistemi Distribuiti 2024-2025 - Finite State Automaton
 
-Lo scheletro espone la struttura che il progetto deve seguire. Al posto di questo paragrafo è necessario scrivere il nome del progetto e una breve descrizione.
+Progetto finale di Sistemi Distribuiti: applicazione web che simula un portale per la gestione del bonus cultura, composta da un database, un server web e un client web.  
+Il database usa un protocollo testuale basato su TCP, il web server è realizzato in Java e il client web in JavaScript.
 
 ## Componenti del gruppo
 
